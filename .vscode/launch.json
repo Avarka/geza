@@ -1,0 +1,22 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "yarn dev",
+      "cwd": "${workspaceFolder}/application",
+    },
+    {
+      "name": "Test Runner",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "yarn test",
+      "cwd": "${workspaceFolder}/application",
+    }
+  ]
+}

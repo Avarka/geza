@@ -1,0 +1,5 @@
+{
+  "editor.tabSize": 2,
+  "vitest.shellType": "terminal",
+  "prettier.tabWidth": 2
+}
