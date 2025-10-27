@@ -1,15 +1,11 @@
 "use client"
 
 import {
+  ChevronRight,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +18,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { authClient } from "@/lib/auth-client"
+import { redirect } from "next/navigation"
+import { toast } from "sonner"
 
 export function NavUser({
   user,
@@ -29,9 +28,14 @@ export function NavUser({
   user: {
     name: string
     email: string
-    avatar: string
   }
 }) {
+  const onLogout = async () => {
+    await authClient.signOut();
+    toast.success("Sikeres kijelentkezés!");
+    redirect("/login");
+  }
+
   const { isMobile } = useSidebar()
 
   return (
@@ -43,15 +47,12 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-              </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              {isMobile ? <ChevronsUpDown className="ml-auto size-4" /> : <ChevronRight className="ml-auto size-4" />}
+              
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -60,9 +61,9 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={onLogout}>
               <LogOut />
-              Log out
+              Kijelentkezés
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
