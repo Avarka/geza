@@ -5,6 +5,9 @@ import { credentials } from "better-auth-credentials-plugin";
 import { authenticate } from "ldap-authentication";
 import * as schema from "@/lib/db/schema";
 import { ldapCredentialsSchema } from "@/lib/schemas/ldapCredential";
+import { admin as adminPlugin } from "better-auth/plugins";
+import { ac, admin, headTeacher, operator, teacher } from "@/lib/auth/permissions";
+
 export interface LdapUser extends User {
   gidNumber: number;
   fullname: string;
@@ -14,7 +17,7 @@ export interface LdapUser extends User {
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "mysql",
-    schema: schema
+    schema: schema,
   }),
   emailAndPassword: {
     enabled: false,
@@ -78,6 +81,18 @@ export const auth = betterAuth({
           gidNumber: parseInt(ldapResult.gidNumber) || -99,
         };
       },
+    }),
+    adminPlugin({
+      ac,
+      roles: {
+        admin,
+        operator,
+        teacher,
+        headTeacher,
+      },
+      defaultRole: "teacher",
+      defaultBanExpiresIn: undefined,
+      bannedUserMessage: "Fiók letiltva. Kérjük lépjen kapcsolatba a rendszergazdával.",
     }),
   ],
 });
