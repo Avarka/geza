@@ -14,6 +14,13 @@ export interface LdapUser extends User {
   dispalyName?: string;
 }
 
+export interface FullUser extends LdapUser {
+  role: string;
+  banned: boolean;
+  banReason: string | null;
+  banExpires: Date | null;
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "mysql",
@@ -47,7 +54,7 @@ export const auth = betterAuth({
   },
   plugins: [
     credentials({
-      UserType: {} as LdapUser,
+      UserType: {} as FullUser,
       autoSignUp: true,
       linkAccountIfExisting: true,
       providerId: "ldap",
@@ -79,6 +86,8 @@ export const auth = betterAuth({
           name: uid,
           dispalyName: ldapResult.displayName,
           gidNumber: parseInt(ldapResult.gidNumber) || -99,
+          emailVerified: true,
+          role: process.env.ADMIN_ACCESS_UIDS?.split(",").includes(uid) ? "admin" : "teacher",
         };
       },
     }),

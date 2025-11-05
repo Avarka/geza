@@ -1,0 +1,78 @@
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import React from 'react'
+
+interface ViewControlsProps {
+  currentView: 'day' | 'week' | 'month' | 'year'
+  onChange: (view: 'day' | 'week' | 'month' | 'year') => void
+  onToday?: () => void
+  onNext?: () => void
+  onPrevious?: () => void
+  variant?: 'default' | 'grid'
+  size?: 'sm' | 'default'
+  className?: string
+}
+
+export const ViewControls: React.FC<ViewControlsProps> = ({
+  currentView,
+  onChange,
+  variant = 'default',
+  size = 'sm',
+  className,
+  onToday,
+  onNext,
+  onPrevious,
+}) => {
+  const isGrid = variant === 'grid'
+
+  const getButtonClassName = (viewType: 'day' | 'week' | 'month' | 'year') => {
+    return cn(
+      isGrid ? 'w-full' : '',
+      currentView === viewType && 'bg-primary/80'
+    )
+  }
+
+  const getBtnVariant = (viewType: 'day' | 'week' | 'month' | 'year') => {
+    return currentView === viewType ? 'default' : 'outline'
+  }
+
+  return (
+    <div
+      className={cn(
+        isGrid ? 'grid grid-cols-2 gap-2' : 'flex gap-1',
+        className
+      )}
+    >
+      <Button onClick={onPrevious} variant="outline" size={size}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button onClick={onNext} variant="outline" size={size}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+
+      <Button
+        onClick={() => onChange('week')}
+        variant={getBtnVariant('week')}
+        size={size}
+        className={getButtonClassName('week')}
+      >
+        Hét
+      </Button>
+      <Button
+        onClick={() => onChange('month')}
+        variant={getBtnVariant('month')}
+        size={size}
+        className={getButtonClassName('month')}
+      >
+        Hónap
+      </Button>
+
+      <Button onClick={onToday} variant="outline" size={size}>
+        Ma
+      </Button>
+    </div>
+  )
+}
+
+export default ViewControls

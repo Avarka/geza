@@ -54,7 +54,7 @@ export function LoginForm() {
 
     if (data) {
       toast.success("Sikeres bejelentkezés!");
-      redirect("/");
+      redirect("/dashboard/schedule");
     }
   };
 
