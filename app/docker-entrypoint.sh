@@ -15,6 +15,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Migrations complete - starting application..."
+echo "Migrations complete."
+echo "Addig dummy data..."
+
+sed -i 's/h270402/'$TEACHER_SAMPLE_UIDS'/g' ./GEZA_teacher_courses.sql
+mysql -h db -u $MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE --ssl-verify-server-cert=off < ./GEZA_teacher_courses.sql
+
+echo "Dummy data added."
+
+echo "Starting application..."
 
 exec "$@"
