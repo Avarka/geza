@@ -8,7 +8,7 @@ done
 
 echo "MySQL is up - running migrations..."
 
-pnpm run drizzle:push
+npx drizzle-kit push
 
 if [ $? -ne 0 ]; then
   echo "Migrations failed!"
