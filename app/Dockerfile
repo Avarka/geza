@@ -1,6 +1,7 @@
 FROM node:20-alpine AS base
 
 RUN npm install -g pnpm
+RUN npm install -g dotenv
 
 WORKDIR /usr/src/app
 
