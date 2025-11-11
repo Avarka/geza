@@ -14,10 +14,10 @@ RUN chmod +x /usr/src/app/docker-entrypoint.sh
 
 RUN apk add --no-cache mysql-client
 
-RUN pnpm build
+# RUN pnpm build
 
 EXPOSE 3000
 
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
 
-CMD ["pnpm", "start"]
+CMD ["pnpm", "dev"]
