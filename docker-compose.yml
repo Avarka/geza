@@ -3,9 +3,10 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:8.0
+    image: mysql:latest
     container_name: geza-mysql
-    env_file: .env.docker
+    env_file: 
+      - ./.env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -36,9 +37,10 @@ services:
   app:
     container_name: geza-app
     build:
-      context: https://github.com/Avarka/geza.git#main
-      dockerfile: app/Dockerfile
-    env_file: .env.docker
+      context: git@github.com:Avarka/geza.git#main:app
+      dockerfile: Dockerfile
+    env_file: 
+      - ./.env
     environment:
       # Database URL for the app
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
