@@ -87,7 +87,7 @@ export const auth = betterAuth({
           dispalyName: ldapResult.displayName,
           gidNumber: parseInt(ldapResult.gidNumber) || -99,
           emailVerified: true,
-          role: process.env.ADMIN_ACCESS_UIDS?.split(",").includes(uid) ? "admin" : "teacher",
+          role: process.env.ADMIN_ACCESS_UIDS?.split(",").includes(uid) ? "admin" : process.env.OPERATOR_ACCESS_UIDS?.split(",").includes(uid) ? "operator" : "teacher",
         };
       },
     }),

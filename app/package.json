@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "drizzle:push": "drizzle-kit push --force"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
