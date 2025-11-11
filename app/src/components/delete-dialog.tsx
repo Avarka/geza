@@ -10,16 +10,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertDialogProps } from "@radix-ui/react-alert-dialog";
 
-export function SemesterDeleteDialog({onDelete, ...props}: {onDelete: () => void} & AlertDialogProps) {
+export function DeleteDialog({
+  onDelete,
+  title = "Biztos vagy benne?",
+  description = "Ez a művelet nem visszavonható.",
+  ...props
+}: {
+  onDelete: () => void;
+  title?: string;
+  description?: string;
+} & AlertDialogProps) {
   return (
     <AlertDialog {...props}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Biztos vagy benne?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Ez a művelet nem visszavonható. A félév törlése minden hozzá kapcsolódó adatot is
-            eltávolít.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Mégsem</AlertDialogCancel>

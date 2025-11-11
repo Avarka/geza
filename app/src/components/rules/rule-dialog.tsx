@@ -13,48 +13,47 @@ import { DialogProps } from "@radix-ui/react-dialog";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { semesterCreate } from "@/lib/schemas/semesterCreate";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { DateInput } from "@/components/date-input";
-import { createSemester, updateSemester } from "@/lib/actions/semester";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { ruleCreate } from "@/lib/schemas/ruleCreate";
+import { createRule, updateRule } from "@/lib/actions/rules";
 
-export default function SemesterCreateEditDialog({
-  semester,
+export default function RuleCreateEditDialog({
+  rule,
   ...props
 }: {
-  semester?: z.infer<typeof semesterCreate>;
+  rule?: z.infer<typeof ruleCreate>;
 } & DialogProps) {
-  const form = useForm<z.infer<typeof semesterCreate>>({
-    resolver: zodResolver(semesterCreate),
+  const form = useForm<z.infer<typeof ruleCreate>>({
+    resolver: zodResolver(ruleCreate),
     defaultValues: {
-      name: semester?.name || "",
-      startDate: semester?.startDate || new Date(),
-      endDate: semester?.endDate || new Date(),
+      name: rule?.name || "",
+      description: rule?.description || "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof semesterCreate>) => {
+  const onSubmit = async (values: z.infer<typeof ruleCreate>) => {
     try {
-      if (semester) {
-        await updateSemester(semester.name, values);
+      if (rule) {
+        await updateRule(rule.name, values);
       } else {
-        await createSemester(values);
+        values["action"] = "{}";
+        //@ts-expect-error Expecting error until JSON schema is clarified
+        await createRule(values);
       }
       props.onOpenChange?.(false);
-      toast.success(`Félév sikeresen ${semester ? "frissítve" : "létrehozva"}`);
+      toast.success(`Szabály sikeresen ${rule ? "frissítve" : "létrehozva"}`);
     } catch (error) {
-      console.error("Error creating semester:", error);
+      console.error("Error creating rule:", error);
       toast.error(
-        `Hiba történt a félév ${semester ? "frissítése" : "létrehozása"} során`
+        `Hiba történt a szabály ${rule ? "frissítése" : "létrehozása"} során`
       );
     }
   };
@@ -64,7 +63,7 @@ export default function SemesterCreateEditDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Félév {semester ? "szerkeszése" : "létrehozása"}
+            Szabály {rule ? "szerkeszése" : "létrehozása"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-4">
@@ -74,15 +73,12 @@ export default function SemesterCreateEditDialog({
               name="name"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="semesterName">
-                    Félév megnevezése
+                  <FieldLabel htmlFor="ruleName">
+                    Szabály megnevezése
                   </FieldLabel>
-                  <FieldDescription>
-                    {'Elvárt formátum: "ÉÉÉÉ/ÉÉ I" vagy "ÉÉÉÉ/ÉÉ II"'}
-                  </FieldDescription>
                   <Input
                     {...field}
-                    id="semesterName"
+                    id="ruleName"
                     type="text"
                     required
                     aria-invalid={fieldState.invalid}
@@ -96,10 +92,19 @@ export default function SemesterCreateEditDialog({
 
             <Controller
               control={form.control}
-              name="startDate"
+              name="description"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <DateInput {...field} label="Kezdő dátum" />
+                  <FieldLabel htmlFor="ruleDescription">
+                    Szabály leírása
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="ruleDescription"
+                    type="text"
+                    required
+                    aria-invalid={fieldState.invalid}
+                  />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
@@ -109,10 +114,22 @@ export default function SemesterCreateEditDialog({
 
             <Controller
               control={form.control}
-              name="endDate"
+              name="action"
+              disabled
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <DateInput {...field} label="Vég dátum" />
+                  <FieldLabel htmlFor="ruleAction">
+                    Művelet
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    value={JSON.stringify(field.value)}
+                    id="ruleAction"
+                    disabled
+                    type="text"
+                    required
+                    aria-invalid={fieldState.invalid}
+                  />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
@@ -131,7 +148,7 @@ export default function SemesterCreateEditDialog({
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? <Spinner /> : ""}
-                {semester ? "Frissítés" : "Hozzáadás"}
+                {rule ? "Frissítés" : "Hozzáadás"}
               </Button>
             </DialogFooter>
           </FieldGroup>

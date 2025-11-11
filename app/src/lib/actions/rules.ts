@@ -1,6 +1,6 @@
 "use server";
 
-import { semester } from "@/lib/db/schema";
+import { rules } from "@/lib/db/schema";
 import { db } from "@/lib/db/instance";
 import { eq } from "drizzle-orm";
 import { auth } from "../auth";
@@ -22,7 +22,7 @@ async function validateSession(
       body: {
         userId: session.user.id,
         permission: {
-          semester: perms,
+          rules: perms,
         },
       },
     }))
@@ -31,31 +31,31 @@ async function validateSession(
   }
 }
 
-export async function createSemester(data: typeof semester.$inferInsert) {
+export async function createRule(data: typeof rules.$inferInsert) {
   await validateSession(["create"]);
 
-  await db.insert(semester).values(data);
+  await db.insert(rules).values(data);
 }
 
-export async function deleteSemester(name: string) {
+export async function deleteRule(name: string) {
   await validateSession(["delete"]);
 
-  await db.delete(semester).where(eq(semester.name, name)).limit(1);
+  await db.delete(rules).where(eq(rules.name, name)).limit(1);
 }
 
-export async function getSemesters() {
+export async function getRules() {
   await validateSession(["read"]);
 
-  return await db.query.semester.findMany({
-    orderBy: (semester, { desc }) => [desc(semester.startDate)],
+  return await db.query.rules.findMany({
+    orderBy: (rules, { desc }) => [desc(rules.name)],
   });
 }
 
-export async function updateSemester(
+export async function updateRule(
   name: string,
-  data: Partial<typeof semester.$inferInsert>
+  data: Partial<typeof rules.$inferInsert>
 ) {
   await validateSession(["update"]);
 
-  await db.update(semester).set(data).where(eq(semester.name, name)).limit(1);
+  await db.update(rules).set(data).where(eq(rules.name, name)).limit(1);
 }

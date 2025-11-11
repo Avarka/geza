@@ -12,18 +12,18 @@ import { Button } from "@/components/ui/button";
 import SemesterCreateEditDialog from "./semester-dialog";
 import { useState } from "react";
 import { Pen, Trash2 } from "lucide-react";
-import { SemesterDeleteDialog } from "./semester-delete-dialog";
+import { DeleteDialog } from "../delete-dialog";
 import { deleteSemester } from "@/lib/actions/semester";
 
 type Semester = typeof semester.$inferSelect;
 
 export function SemesterItem({ semester, onEdit }: { semester: Semester, onEdit: () => void }) {
-  const [isSemesterEditDialogOpen, setIsSemesterEditDialogOpen] =
+  const [isEditDialogOpen, setIsEditDialogOpen] =
     useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const handleDialogClose = (open: boolean) => {
-    setIsSemesterEditDialogOpen(open);
+    setIsEditDialogOpen(open);
     if (open) return;
     onEdit();
   };
@@ -37,10 +37,10 @@ export function SemesterItem({ semester, onEdit }: { semester: Semester, onEdit:
     <>
       <SemesterCreateEditDialog
         semester={semester}
-        open={isSemesterEditDialogOpen}
+        open={isEditDialogOpen}
         onOpenChange={handleDialogClose}
       />
-      <SemesterDeleteDialog onDelete={handleDelete} open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} />
+      <DeleteDialog onDelete={handleDelete} open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} />
       <Item variant="outline">
         <ItemContent>
           <ItemTitle>{semester.name}</ItemTitle>
@@ -54,7 +54,7 @@ export function SemesterItem({ semester, onEdit }: { semester: Semester, onEdit:
           </ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button variant="outline" size="sm" onClick={() => setIsSemesterEditDialogOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
             <Pen />
             Szerkesztés
           </Button>

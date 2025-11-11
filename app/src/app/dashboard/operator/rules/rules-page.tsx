@@ -1,45 +1,43 @@
 "use client";
 
-import SemesterCreateEditDialog from "@/components/semester/semester-dialog";
-import {
-  SemesterItem,
-  SemesterItemSkeleton,
-} from "@/components/semester/semester-item";
+import RuleCreateEditDialog from "@/components/rules/rule-dialog";
+import { RuleItem } from "@/components/rules/rule-item";
+import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { semester } from "@/lib/db/schema";
+import { rules } from "@/lib/db/schema";
 import { PlusCircleIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 
-type Semester = typeof semester.$inferSelect;
+type Rule = typeof rules.$inferSelect;
 
-export function SemesterPage({
-  semesters,
+export function RulesPage({
+  rules,
   doUpdate,
 }: {
-  semesters: Semester[];
-  doUpdate: () => Promise<Semester[]>;
+  rules: Rule[];
+  doUpdate: () => Promise<Rule[]>;
 }) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [currentSemesters, setCurrentSemesters] = useState(semesters);
+  const [currentRules, setCurrentRules] = useState(rules);
   const [isUpdating, startTransition] = useTransition();
 
   const handleDialogClose = async (open: boolean) => {
     setIsCreateDialogOpen(open);
     if (open) return;
-    updateSemesters();
+    updateRules();
   };
 
-  const updateSemesters = () => {
+  const updateRules = () => {
     startTransition(async () => {
-      const updatedSemesters = await doUpdate();
-      setCurrentSemesters(updatedSemesters);
+      const updatedRules = await doUpdate();
+      setCurrentRules(updatedRules);
     });
   };
 
   return (
     <>
-      <SemesterCreateEditDialog
+      <RuleCreateEditDialog
         open={isCreateDialogOpen}
         onOpenChange={handleDialogClose}
       />
@@ -50,7 +48,7 @@ export function SemesterPage({
             variant="ghost"
             size="icon-lg"
             className="rounded-full"
-            aria-label="Új félév hozzáadása"
+            aria-label="Új szabály létrehozása"
             onClick={() => setIsCreateDialogOpen(true)}
           >
             <PlusCircleIcon />
@@ -59,15 +57,13 @@ export function SemesterPage({
         </div>
 
         {isUpdating ? (
-          <SemesterItemSkeleton />
+          null
         ) : (
-          currentSemesters.map(semester => (
-            <SemesterItem
-              key={semester.name}
-              semester={semester}
-              onEdit={updateSemesters}
-            />
-          ))
+          <Accordion type="single" collapsible>
+            {currentRules.map(rule => (
+              <RuleItem key={rule.name} rule={rule} onEdit={updateRules} />
+            ))}
+          </Accordion>
         )}
       </div>
     </>
