@@ -11,8 +11,6 @@ export async function getUserSchedule(userLdapId: string) {
 }
 
 export async function getUserScheduleForCourse(userLdapId: string, courseNeptunId: string) {
-  console.log("------------- Fetching schedule for user:", userLdapId, "and course:", courseNeptunId);
-
   const result = await db.query.gezaTeacherCourses.findMany({
     where: (courses, { and, eq }) => and(
       eq(courses.userEmail, userLdapId),

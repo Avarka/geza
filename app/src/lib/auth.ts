@@ -11,7 +11,7 @@ import { ac, admin, headTeacher, operator, teacher } from "@/lib/auth/permission
 export interface LdapUser extends User {
   gidNumber: number;
   fullname: string;
-  dispalyName?: string;
+  displayName?: string;
 }
 
 export interface FullUser extends LdapUser {
@@ -82,7 +82,7 @@ export const auth = betterAuth({
             (Array.isArray(ldapResult.mail)
               ? ldapResult.mail[0]
               : ldapResult.mail) || `${uid}@inf.u-szeged.hu`,
-          cn: ldapResult.cn,
+          fullname: ldapResult.cn,
           name: uid,
           dispalyName: ldapResult.displayName,
           gidNumber: parseInt(ldapResult.gidNumber) || -99,

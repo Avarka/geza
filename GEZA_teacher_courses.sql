@@ -54,4 +54,4 @@ INSERT INTO `GEZA_teacher_courses` (`user_id`, `user_email`, `user_name`, `teach
 (NULL, 'h270402', '', NULL, NULL, NULL, 1, 'IB001e-00023', 'dotnetf', '.NET F#', 'ea', 'n', 2, NULL, NULL, NULL, 14, NULL, NULL, '2025-12-07', 14, 0, NULL, 'IR-217', 'IR-217 PC terem'),
 (NULL, 'h270402', '', NULL, NULL, NULL, 2, 'IB009L-00009', 'unity2d', '2D játékfejlesztés Unity-ben', 'gy', 'n', 2, NULL, NULL, NULL, 14, NULL, NULL, '2025-12-07', 15, 1, NULL, 'IR-217', 'IR-217 PC terem'),
 (NULL, 'h270402', '', NULL, NULL, NULL, 3, 'IMN209E', 'geptanelm', 'A gépi tanulás elmélete', 'ea', 'n', 2, NULL, NULL, NULL, 14, NULL, NULL, '2025-12-07', 16, 0, NULL, 'IR-217', 'IR-217 PC terem'),
-(NULL, 'h270402', '', NULL, NULL, NULL, 4, 'IMN209G', 'geptanelm_gy', 'A gépi tanulás elmélete gyak.', 'gy', 'n', 1, NULL, NULL, NULL, 14, NULL, NULL, '2025-12-07', 17, 3, NULL, 'IR-217', 'IR-217 PC terem'),
+(NULL, 'h270402', '', NULL, NULL, NULL, 4, 'IMN209G', 'geptanelm_gy', 'A gépi tanulás elmélete gyak.', 'gy', 'n', 1, NULL, NULL, NULL, 14, NULL, NULL, '2025-12-07', 17, 3, NULL, 'IR-217', 'IR-217 PC terem');

@@ -118,7 +118,7 @@ export default function BookingDialog({
                     <MultiSelectContent>
                       <MultiSelectGroup>
                         {tempRules.length > 0 ? (
-                          tempRules.map((rule, i) => (
+                          tempRules.map((rule) => (
                             <MultiSelectItem
                               key={rule}
                               value={rule}

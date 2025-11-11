@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function DashboardPage() {
-  return <div>Dashboard Page</div>;
+  redirect("/dashboard/schedule");
 }
