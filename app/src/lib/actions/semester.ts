@@ -3,48 +3,22 @@
 import { semester } from "@/lib/db/schema";
 import { db } from "@/lib/db/instance";
 import { eq } from "drizzle-orm";
-import { auth } from "../auth";
-import { headers } from "next/headers";
-
-async function validateSession(
-  perms: ("read" | "create" | "update" | "delete")[]
-) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    throw new Error("No session found");
-  }
-
-  if (
-    !(await auth.api.userHasPermission({
-      body: {
-        userId: session.user.id,
-        permission: {
-          semester: perms,
-        },
-      },
-    }))
-  ) {
-    throw new Error("Insufficient permissions");
-  }
-}
+import { validateSession } from "../helpers/permissionValidation";
 
 export async function createSemester(data: typeof semester.$inferInsert) {
-  await validateSession(["create"]);
+  await validateSession("semester", ["create"]);
 
   await db.insert(semester).values(data);
 }
 
 export async function deleteSemester(name: string) {
-  await validateSession(["delete"]);
+  await validateSession("semester", ["delete"]);
 
   await db.delete(semester).where(eq(semester.name, name)).limit(1);
 }
 
 export async function getSemesters() {
-  await validateSession(["read"]);
+  await validateSession("semester", ["read"]);
 
   return await db.query.semester.findMany({
     orderBy: (semester, { desc }) => [desc(semester.startDate)],
@@ -55,7 +29,7 @@ export async function updateSemester(
   name: string,
   data: Partial<typeof semester.$inferInsert>
 ) {
-  await validateSession(["update"]);
+  await validateSession("semester", ["update"]);
 
   await db.update(semester).set(data).where(eq(semester.name, name)).limit(1);
 }

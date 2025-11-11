@@ -3,21 +3,36 @@
 import BookingDialog from "@/components/calendar/booking-dialog";
 import { TeacherCalendarHeader } from "@/components/calendar/calendar-header";
 import CustomEvent from "@/components/calendar/event";
-import { getUserScheduleForCourse } from "@/lib/actions/schedule";
-import { authClient } from "@/lib/auth-client";
-import { getStartDate } from "@/lib/helpers/classToEventTransformer";
+import { rules } from "@/lib/db/schema";
 import { CalendarEvent, IlamyCalendar } from "@ilamy/calendar";
-import { redirect } from "next/navigation";
 import { useState } from "react";
 
-export function SchedulePage({ events }: { events: CalendarEvent[] }) {
+type Rule = typeof rules.$inferSelect;
+
+export function SchedulePage({
+  events,
+  rules,
+  userLdap,
+}: {
+  events: CalendarEvent[];
+  rules: Rule[];
+  userLdap: string;
+}) {
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
-  const [bookingEvent, setBookingEvent] = useState<CalendarEvent>({} as CalendarEvent)
-  const [bookingEventDates, setBookingEventDates] = useState<Date[]>([])
+  const [bookingEvent, setBookingEvent] = useState<CalendarEvent | undefined>(undefined);
 
   return (
     <div>
-      <BookingDialog event={bookingEvent} dates={bookingEventDates} open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen} />
+      {isBookingDialogOpen && bookingEvent !== undefined && (
+        <BookingDialog
+          event={bookingEvent}
+          open={isBookingDialogOpen}
+          onOpenChange={setIsBookingDialogOpen}
+          rules={rules}
+          userLdap={userLdap}
+        />
+      )}
+
       <IlamyCalendar
         initialView="week"
         firstDayOfWeek="monday"
@@ -30,14 +45,7 @@ export function SchedulePage({ events }: { events: CalendarEvent[] }) {
         viewHeaderClassName="bg-accent pointer-events-none"
         renderEvent={event => <CustomEvent event={event} />}
         onEventClick={async event => {
-          console.log("Event clicked:", event);
-          const user = (await authClient.getSession()).data?.user.name || redirect("/login");
-          
           setBookingEvent(event);
-          const events = await getUserScheduleForCourse(user, event.data!.neptunCode);
-          const dates = events.map(e => getStartDate(e));
-          setBookingEventDates(dates);
-
           setIsBookingDialogOpen(true);
         }}
       />

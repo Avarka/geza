@@ -9,6 +9,8 @@ import {
   boolean,
   json,
   char,
+  mysqlEnum,
+  primaryKey,
 } from "drizzle-orm/mysql-core";
 
 /* --- BETTER AUTH TABLES --- */
@@ -134,6 +136,10 @@ export const rules = mysqlTable("rule", {
     .notNull(),
 });
 
+export const ruleRelations = relations(rules, ({ many }) => ({
+  bookingRules: many(bookingsToRules),
+}));
+
 export const bookings = mysqlTable("booking", {
   id: int().autoincrement().primaryKey(),
   userId: varchar("user_id", { length: 36 })
@@ -145,8 +151,9 @@ export const bookings = mysqlTable("booking", {
   course: varchar("course", { length: 255 }).notNull(),
   startTime: timestamp("start_time", { fsp: 3 }).notNull(),
   endTime: timestamp("end_time", { fsp: 3 }).notNull(),
-  status: varchar("status", { length: 50 }).notNull(),
-  rules: int("rules").notNull(),
+  status: mysqlEnum(["pending", "permitted", "declined"])
+    .default("pending")
+    .notNull(),
   note: text("note"),
   createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { fsp: 3 })
@@ -155,24 +162,38 @@ export const bookings = mysqlTable("booking", {
     .notNull(),
 });
 
-export const bookingRule = mysqlTable("booking_rule", {
-  id: int().autoincrement().primaryKey(),
-  bookingId: int("booking_id")
-    .notNull()
-    .references(() => bookings.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  ruleId: int("rule_id")
-    .notNull()
-    .references(() => rules.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
-});
+export const bookingRelations = relations(bookings, ({ one, many }) => ({
+  bookingToRules: many(bookingsToRules),
+  user: one(user, {
+    fields: [bookings.userId],
+    references: [user.id],
+  }),
+}));
 
-export const bookingRuleRelation = relations(bookingRule, ({one}) => ({
+export const bookingsToRules = mysqlTable(
+  "booking_rule",
+  {
+    bookingId: int("booking_id")
+      .notNull()
+      .references(() => bookings.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    ruleId: int("rule_id")
+      .notNull()
+      .references(() => rules.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
+  },
+  t => [primaryKey({ columns: [t.bookingId, t.ruleId] })]
+);
+
+export const bookingsToRulesRelation = relations(bookingsToRules, ({ one }) => ({
   booking: one(bookings, {
-    fields: [bookingRule.bookingId],
+    fields: [bookingsToRules.bookingId],
     references: [bookings.id],
   }),
   rule: one(rules, {
-    fields: [bookingRule.ruleId],
+    fields: [bookingsToRules.ruleId],
     references: [rules.id],
   }),
-}))
+}));

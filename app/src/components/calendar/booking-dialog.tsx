@@ -16,7 +16,12 @@ import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { bookingFormSchema } from "@/lib/schemas/bookingForm";
-import { Field, FieldError, FieldGroup } from "../ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   MultiSelect,
   MultiSelectContent,
@@ -24,33 +29,83 @@ import {
   MultiSelectItem,
   MultiSelectTrigger,
   MultiSelectValue,
-} from "../ui/multi-select";
+} from "@/components/ui/multi-select";
+import { rules } from "@/lib/db/schema";
+import { useEffect, useState, useTransition } from "react";
+import { getUserScheduleForCourse } from "@/lib/actions/schedule";
+import { getStartDate } from "@/lib/helpers/classToEventTransformer";
+import { Spinner } from "@/components/ui/spinner";
+import { createBookingsForEvents } from "@/lib/actions/bookings";
+import { Textarea } from "../ui/textarea";
+import { toast } from "sonner";
 
-const tempRules = [
-  "Újraindítás kezdéskor",
-  "Újraindítás a végén",
-  "Progalapszabály",
-  "Elérhető rendszer: CS",
-  "Elérhető rendszer: Linux",
-  "Elérhető rendszer: Windows"
-]
+type Rule = typeof rules.$inferSelect;
 
 export default function BookingDialog({
   event,
-  dates,
+  userLdap,
+  rules,
   ...props
-}: { event: CalendarEvent; dates: Date[] } & DialogProps) {
+}: { event: CalendarEvent; userLdap: string; rules: Rule[] } & DialogProps) {
   const form = useForm<z.infer<typeof bookingFormSchema>>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
-      listOfEvents: [],
+      listOfEvents: [event.start.toISOString()],
       listOfRules: [],
     },
   });
 
-  const onSubmit = (values: z.infer<typeof bookingFormSchema>) => {
-    console.log("Form submitted with values:", values);
+  const [gettingEvents, startTransition] = useTransition();
+  const [dates, setDates] = useState<Date[]>([]);
+
+  useEffect(() => {
+    if (!event.data) {
+      return;
+    }
+    startTransition(async () => {
+      const events = await getUserScheduleForCourse(
+        userLdap,
+        event.data!.neptunCode
+      );
+      const dates = events.map(e => getStartDate(e));
+      setDates(dates);
+    });
+  }, [event.data, userLdap]);
+
+  const onSubmit = async (values: z.infer<typeof bookingFormSchema>) => {
+    try {
+      await createBookingsForEvents({
+        event: {
+          lenght: Math.abs(
+            new Date(event.start).getHours() - new Date(event.end).getHours()
+          ),
+          location: event.location,
+          neptunCode: event.data?.neptunCode,
+        },
+        userLdap,
+        ...values,
+      });
+      props.onOpenChange?.(false);
+      toast.success("Foglalás sikeres, operátori jóváhagyásra vár");
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      toast.error("Hiba történt a foglalás során");
+    }
   };
+
+  if (gettingEvents) {
+    return (
+      <Dialog {...props}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{event.title}</DialogTitle>
+            <DialogDescription>ZH mód foglalása</DialogDescription>
+          </DialogHeader>
+          <Spinner className="mx-auto my-8 size-10" />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog {...props}>
@@ -66,12 +121,16 @@ export default function BookingDialog({
               name="listOfEvents"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="events">Alkalmak</FieldLabel>
                   <MultiSelect
                     {...field}
                     onValuesChange={field.onChange}
                     values={field.value}
                   >
-                    <MultiSelectTrigger className="w-full max-w-[400px]">
+                    <MultiSelectTrigger
+                      className="w-full max-w-[400px]"
+                      id="events"
+                    >
                       <MultiSelectValue placeholder="Válasszon alkalmakat..." />
                     </MultiSelectTrigger>
                     <MultiSelectContent>
@@ -90,7 +149,9 @@ export default function BookingDialog({
                             </MultiSelectItem>
                           ))
                         ) : (
-                          <MultiSelectItem value="">Nincsenek elérhető időpontok a foglaláshoz.</MultiSelectItem>
+                          <MultiSelectItem value="">
+                            Nincsenek elérhető időpontok a foglaláshoz.
+                          </MultiSelectItem>
                         )}
                       </MultiSelectGroup>
                     </MultiSelectContent>
@@ -107,27 +168,33 @@ export default function BookingDialog({
               name="listOfRules"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="rules">Szabályok</FieldLabel>
                   <MultiSelect
                     {...field}
                     onValuesChange={field.onChange}
-                    values={field.value}
+                    values={field.value.map(String)}
                   >
-                    <MultiSelectTrigger className="w-full max-w-[400px]">
+                    <MultiSelectTrigger
+                      className="w-full max-w-[400px]"
+                      id="rules"
+                    >
                       <MultiSelectValue placeholder="Válasszon szabályokat..." />
                     </MultiSelectTrigger>
                     <MultiSelectContent>
                       <MultiSelectGroup>
-                        {tempRules.length > 0 ? (
-                          tempRules.map((rule) => (
+                        {rules.length > 0 ? (
+                          rules.map(rule => (
                             <MultiSelectItem
-                              key={rule}
-                              value={rule}
+                              key={rule.id.toString()}
+                              value={rule.id.toString()}
                             >
-                              {rule}
+                              {rule.name}
                             </MultiSelectItem>
                           ))
                         ) : (
-                          <MultiSelectItem value="">Nincsenek elérhető szabályok.</MultiSelectItem>
+                          <MultiSelectItem value="">
+                            Nincsenek elérhető szabályok.
+                          </MultiSelectItem>
                         )}
                       </MultiSelectGroup>
                     </MultiSelectContent>
@@ -139,11 +206,32 @@ export default function BookingDialog({
               )}
             />
 
+            <Controller
+              control={form.control}
+              name="note"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="note">Megjegyzés</FieldLabel>
+                  <Textarea
+                    {...field}
+                    id="note"
+                    placeholder="Szabadszavas megjegyzés, amennyiben szükséges"
+                    rows={4}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline">Mégse</Button>
               </DialogClose>
-              <Button type="submit">Foglalás</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? <Spinner /> : null} Foglalás
+              </Button>
             </DialogFooter>
           </FieldGroup>
         </form>
