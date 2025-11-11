@@ -7,9 +7,9 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-COPY . .
+COPY ./app .
 
-COPY docker-entrypoint.sh .
+COPY ./app/docker-entrypoint.sh .
 RUN chmod +x /usr/src/app/docker-entrypoint.sh
 
 RUN apk add --no-cache mysql-client
