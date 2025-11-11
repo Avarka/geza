@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "drizzle:push": "drizzle-kit push --force"
+    "drizzle:push": "npx drizzle-kit push --force"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
