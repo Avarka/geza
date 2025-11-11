@@ -12,7 +12,7 @@ COPY . .
 COPY ./docker-entrypoint.sh .
 RUN chmod +x /usr/src/app/docker-entrypoint.sh
 
-RUN apk add --no-cache mysql-client
+RUN apk add --no-cache mysql-client mariadb-connector-c
 
 # RUN pnpm build
 
