@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Waiting for MySQL..."
-while ! mysql -h db -u $MYSQL_USER -p$MYSQL_PASSWORD -e "select 1" $MYSQL_DATABASE >/dev/null 2>&1; do
+while ! mysql -h db -u $MYSQL_USER -p $MYSQL_PASSWORD -e "select 1" $MYSQL_DATABASE >/dev/null 2>&1; do
   echo "  MySQL is unavailable - sleeping"
   sleep 1
 done
