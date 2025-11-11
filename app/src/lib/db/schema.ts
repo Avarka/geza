@@ -17,7 +17,7 @@ import {
 
 export const user = mysqlTable("user", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  name: text("name").notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: boolean("email_verified").default(true).notNull(),
   image: text("image"),
@@ -187,13 +187,16 @@ export const bookingsToRules = mysqlTable(
   t => [primaryKey({ columns: [t.bookingId, t.ruleId] })]
 );
 
-export const bookingsToRulesRelation = relations(bookingsToRules, ({ one }) => ({
-  booking: one(bookings, {
-    fields: [bookingsToRules.bookingId],
-    references: [bookings.id],
-  }),
-  rule: one(rules, {
-    fields: [bookingsToRules.ruleId],
-    references: [rules.id],
-  }),
-}));
+export const bookingsToRulesRelation = relations(
+  bookingsToRules,
+  ({ one }) => ({
+    booking: one(bookings, {
+      fields: [bookingsToRules.bookingId],
+      references: [bookings.id],
+    }),
+    rule: one(rules, {
+      fields: [bookingsToRules.ruleId],
+      references: [rules.id],
+    }),
+  })
+);
