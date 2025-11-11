@@ -15,7 +15,7 @@ import { CalendarEvent } from "@ilamy/calendar";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { bookingFormSchema } from "@/lib/schemas/bookingForm";
+import { newBookingFormSchema } from "@/lib/schemas/bookingForm";
 import {
   Field,
   FieldError,
@@ -38,6 +38,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { createBookingsForEvents } from "@/lib/actions/bookings";
 import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
+import { Input } from "../ui/input";
 
 type Rule = typeof rules.$inferSelect;
 
@@ -47,11 +48,14 @@ export default function BookingDialog({
   rules,
   ...props
 }: { event: CalendarEvent; userLdap: string; rules: Rule[] } & DialogProps) {
-  const form = useForm<z.infer<typeof bookingFormSchema>>({
-    resolver: zodResolver(bookingFormSchema),
+  const form = useForm<z.infer<typeof newBookingFormSchema>>({
+    resolver: zodResolver(newBookingFormSchema),
     defaultValues: {
       listOfEvents: [event.start.toISOString()],
       listOfRules: [],
+      note: "",
+      startTime: new Date(event.start).toTimeString().split(" ")[0],
+      endTime: new Date(event.end).toTimeString().split(" ")[0],
     },
   });
 
@@ -72,7 +76,7 @@ export default function BookingDialog({
     });
   }, [event.data, userLdap]);
 
-  const onSubmit = async (values: z.infer<typeof bookingFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof newBookingFormSchema>) => {
     try {
       await createBookingsForEvents({
         event: {
@@ -116,6 +120,46 @@ export default function BookingDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-4">
           <FieldGroup>
+            <div className="flex gap-4 md:flex-row flex-col">
+              <Controller
+                control={form.control}
+                name="startTime"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="startTime">Kezdő időpont</FieldLabel>
+                    <Input
+                      {...field}
+                      type="time"
+                      id="startTime"
+                      step="60"
+                      min={new Date(event.start).toTimeString().split(" ")[0]}
+                      max={new Date(event.end).toTimeString().split(" ")[0]}
+                      value={field.value || ""}
+                    />
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="endTime"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="endTime">Vég időpont</FieldLabel>
+                    <Input
+                      {...field}
+                      type="time"
+                      id="endTime"
+                      step="60"
+                      min={new Date(event.start).toTimeString().split(" ")[0]}
+                      max={new Date(event.end).toTimeString().split(" ")[0]}
+                      value={field.value || ""}
+                    />
+                  </Field>
+                )}
+              />
+            </div>
+
             <Controller
               control={form.control}
               name="listOfEvents"
