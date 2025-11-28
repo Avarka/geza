@@ -18,11 +18,17 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import BookingEditDialog from "./booking-edit-dialog";
 import { DeleteDialog } from "../delete-dialog";
-import { declineBooking, deleteBooking, permitBooking } from "@/lib/actions/bookings";
+import {
+  declineBooking,
+  deleteBooking,
+  permitBooking,
+} from "@/lib/actions/bookings";
 import { toast } from "sonner";
+import clsx from "clsx";
+import { Spinner } from "@/components/ui/spinner";
 
 export function BookingItem({
   booking,
@@ -33,6 +39,8 @@ export function BookingItem({
 }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [waitingOnOperation, startTransition] = useTransition();
+  const [operation, setOperation] = useState<string | null>(null);
 
   const statusIcon = () => {
     switch (booking.status) {
@@ -67,19 +75,33 @@ export function BookingItem({
   };
 
   const handleDelete = async () => {
-    await deleteBooking(booking.id);
-    toast.success("Foglalás törölve, frissítse az oldalt");
-  }
+    startTransition(async () => {
+      setOperation("delete");
+      await deleteBooking(booking.id);
+      toast.success("Foglalás törölve, frissítse az oldalt");
+      setOperation(null);
+    });
+  };
 
   const handleApproveBooking = async () => {
-    await permitBooking(booking.id);
-    toast.success("Foglalás engedélyezve, frissítse az oldalt");
-  }
+    startTransition(async () => {
+      setOperation("approve");
+      await permitBooking(booking.id);
+      toast.success("Foglalás engedélyezve!");
+      setOperation(null);
+      booking.status = "permitted";
+    });
+  };
 
   const handleDeclineBooking = async () => {
-    await declineBooking(booking.id);
-    toast.success("Foglalás elutasítva, frissítse az oldalt");
-  }
+    startTransition(async () => {
+      setOperation("decline");
+      await declineBooking(booking.id);
+      toast.success("Foglalás elutasítva!");
+      setOperation(null);
+      booking.status = "declined";
+    });
+  };
 
   return (
     <>
@@ -88,12 +110,19 @@ export function BookingItem({
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
       />
-      <DeleteDialog 
+      <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onDelete={handleDelete}
       />
-      <Item variant="outline" className="mb-4">
+      <Item
+        variant="outline"
+        className={clsx(
+          "mb-4",
+          booking.status === "declined" && "bg-yellow-100 dark:bg-yellow-900",
+          booking.status === "permitted" && "bg-green-100 dark:bg-green-900"
+        )}
+      >
         <ItemMedia variant="icon">{statusIcon()}</ItemMedia>
         <ItemContent>
           <ItemTitle>
@@ -106,23 +135,45 @@ export function BookingItem({
         <ItemActions>
           {isOperatorView ? (
             <>
-              <Button size="sm" onClick={handleApproveBooking}>
-                <Check /> Engedélyez
+              <Button
+                size="sm"
+                onClick={handleApproveBooking}
+                disabled={waitingOnOperation}
+              >
+                {operation === "approve" ? <Spinner /> : <Check />}
+                Engedélyez
               </Button>
-              <Button size="sm" variant="destructive" onClick={handleDeclineBooking}>
-                <X /> Elutasít
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleDeclineBooking}
+                disabled={waitingOnOperation}
+              >
+                {operation === "decline" ? <Spinner /> : <X />} Elutasít
               </Button>
             </>
           ) : (
-            <>
-              <Button size="sm" onClick={() => setEditDialogOpen(true)}>
-                <Pen /> Szerkesztés
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-                <Trash2 />
-                Törlés
-              </Button>
-            </>
+            booking.status === "pending" && (
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => setEditDialogOpen(true)}
+                  disabled={waitingOnOperation}
+                >
+                  <Pen />
+                  Szerkesztés
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={waitingOnOperation}
+                >
+                  {operation === "delete" ? <Spinner /> : <Trash2 />}
+                  Törlés
+                </Button>
+              </>
+            )
           )}
         </ItemActions>
       </Item>

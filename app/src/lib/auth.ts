@@ -1,6 +1,6 @@
 import { betterAuth, User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/lib/db/instance";
+import { db } from "@/lib/db/instances";
 import { credentials } from "better-auth-credentials-plugin";
 import { authenticate } from "ldap-authentication";
 import * as schema from "@/lib/db/schema";

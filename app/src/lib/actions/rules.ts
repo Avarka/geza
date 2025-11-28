@@ -1,7 +1,7 @@
 "use server";
 
 import { rules } from "@/lib/db/schema";
-import { db } from "@/lib/db/instance";
+import { db } from "@/lib/db/instances";
 import { eq } from "drizzle-orm";
 import { validateSession } from "../helpers/permissionValidation";
 

@@ -23,23 +23,23 @@ type NavItem = {
   title: string;
   url: string;
   isActive?: boolean;
-}
+};
 
 type NavGroup = {
   title: string;
   items: NavItem[];
-}
+};
 
 const data: {
   [key: string]: NavGroup[];
 } = {
   navMain: [
     {
-      title: "Általános",
+      title: "Oktatói",
       items: [
         {
           title: "Órarend",
-          url: "/dashboard/schedule"
+          url: "/dashboard/schedule",
         },
         {
           title: "Kért ZH módok",
@@ -60,29 +60,43 @@ const data: {
           title: "Szabályok kezelése",
           url: "/dashboard/operator/rules",
         },
+      ],
+    },
+  ],
+  navAdmin: [
+    {
+      title: "Admin",
+      items: [
         {
-          title: "Felhasználók kezelése",
-          url: "/dashboard/operator/users",
+          title: "Logok",
+          url: "/dashboard/logs",
         },
         {
-          title: "Félév kezelés",
-          url: "/dashboard/operator/semester",
-        }
-      ]
-    }
-  ]
+          title: "Felhasználók kezelése",
+          url: "/dashboard/admin/users",
+        },
+      ],
+    },
+  ],
 };
 
-export function AppSidebar({ user, ...props }: {user: FullUser} & React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: { user: FullUser } & React.ComponentProps<typeof Sidebar>) {
   const isOperator = user.role?.includes("operator");
   const isAdmin = user.role?.includes("admin");
-  const navToRender = isOperator ? data.navOperator : isAdmin ? [...data.navMain, ...data.navOperator] : data.navMain;
+  const navToRender = isOperator
+    ? data.navOperator
+    : isAdmin
+    ? [...data.navMain, ...data.navOperator, ...data.navAdmin]
+    : data.navMain;
   const pathname = usePathname();
 
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <NavUser 
+        <NavUser
           user={{
             name: user.displayName || user.fullname || user.name,
             email: user.email,
@@ -99,7 +113,7 @@ export function AppSidebar({ user, ...props }: {user: FullUser} & React.Componen
                 {item.items.map(item => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={pathname === item.url}>
-                      <Link href={item.url} >{item.title}</Link>
+                      <Link href={item.url}>{item.title}</Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

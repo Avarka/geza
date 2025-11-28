@@ -1,11 +1,15 @@
 "use server";
 
-import { bookings, bookingsToRules, user } from "../db/schema";
-import { db } from "../db/instance";
-import { validateSession } from "../helpers/permissionValidation";
-import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/instances";
+import { validateSession } from "@/lib/helpers/permissionValidation";
+import { newBookingFormSchema } from "@/lib/schemas/bookingForm";
+import { bookings, rules, user } from "@/lib/db/schema";
+import { and, eq, gt, or } from "drizzle-orm";
 import * as z from "zod";
-import { newBookingFormSchema } from "../schemas/bookingForm";
+import transporter from "@/lib/mailer";
+import { render } from "@react-email/components";
+import NewBookingEmail from "@/emails/new-booking";
+import TestEmail from "@/emails/test";
 
 export async function createBooking(data: typeof bookings.$inferInsert) {
   await validateSession("booking", ["make"]);
@@ -24,8 +28,13 @@ function parseTime(date: Date, timeString?: string) {
 }
 
 export async function createBookingsForEvents({
-  event, userLdap, ...formValues
-}: { event: {lenght: number, location?: string, neptunCode?: string}, userLdap: string } & z.infer<typeof newBookingFormSchema>) {
+  event,
+  userLdap,
+  ...formValues
+}: {
+  event: { lenght: number; location: string; neptunCode: string };
+  userLdap: string;
+} & z.infer<typeof newBookingFormSchema>) {
   await validateSession("booking", ["make"]);
 
   const userRecord = await db.query.user.findFirst({
@@ -36,31 +45,50 @@ export async function createBookingsForEvents({
     throw new Error("User not found");
   }
 
-  console.log(formValues.startTime, formValues.endTime);
-
   const bookingInserts = formValues.listOfEvents.map(date => ({
     userId: userRecord.id,
     startTime: parseTime(new Date(date), formValues.startTime),
-    endTime: parseTime(new Date(new Date(date).getTime() + event.lenght * 60 * 60 * 1000), formValues.endTime),
-    note: formValues.note || null,
-    classroom: event.location || "N/A",
-    course: event.neptunCode || "N/A",
+    endTime: parseTime(
+      new Date(new Date(date).getTime() + event.lenght * 60 * 60 * 1000),
+      formValues.endTime
+    ),
+    ruleId: parseInt(formValues.rule, 10) || null,
+    customRequest: formValues.customRequest,
+    classroom: event.location,
+    course: event.neptunCode,
   }));
 
   await db.transaction(async tx => {
-    const insertedBookings = await tx.insert(bookings).values(bookingInserts).$returningId();
+    await tx.insert(bookings).values(bookingInserts);
+  });
 
-    if (formValues.listOfRules.length > 0) {
-      const bookingRuleInserts = insertedBookings.flatMap(bookingId =>
-        formValues.listOfRules.map(ruleId => ({
-          bookingId: bookingId.id,
-          ruleId: parseInt(ruleId),
-        }))
-      );
+  let rule = undefined;
 
-      await tx.insert(bookingsToRules).values(bookingRuleInserts);
+  if (formValues.rule !== "other") {
+    rule = await db.query.rules.findFirst({
+      where: eq(rules.id, parseInt(formValues.rule, 10)),
+    });
+  }
+
+  const emailHtml = await render(
+    NewBookingEmail({ bookings: bookingInserts, user: userRecord, rule: rule })
+  );
+
+  await transporter.sendMail(
+    {
+      from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM}>`,
+      to: "vadavar7@gmail.com",
+      subject: "Új foglalás",
+      html: emailHtml,
+    },
+    (error, info) => {
+      if (error) {
+        console.error(error);
+      }
+
+      console.log("Email sent: " + info.response);
     }
-  })
+  );
 }
 
 export async function deleteBooking(id: number) {
@@ -71,8 +99,14 @@ export async function deleteBooking(id: number) {
 
 export async function getMyBookings(userId: string) {
   return await db.query.bookings.findMany({
-    where: eq(bookings.userId, userId),
-    orderBy: (bookings, { desc }) => [desc(bookings.startTime)],
+    where: and(
+      eq(bookings.userId, userId),
+      or(
+        eq(bookings.status, "pending"),
+        gt(bookings.startTime, new Date())
+      )
+    ),
+    orderBy: (bookings, { asc }) => [asc(bookings.startTime)],
   });
 }
 
@@ -80,15 +114,14 @@ export async function getAllBookings() {
   await validateSession("booking", ["view"]);
 
   return await db.query.bookings.findMany({
-    orderBy: (bookings, { desc }) => [desc(bookings.startTime)],
+    orderBy: (bookings, { asc }) => [asc(bookings.startTime)],
   });
 }
 
 export async function updateBooking(
   id: number,
   startTime: string | undefined,
-  endTime: string | undefined,
-  note: string | undefined
+  endTime: string | undefined
 ) {
   await validateSession("booking", ["make"]);
 
@@ -107,8 +140,9 @@ export async function updateBooking(
     ? parseTime(currentBooking.endTime, endTime)
     : currentBooking.endTime;
 
-  await db.update(bookings)
-    .set({ startTime: updatedStartTime, endTime: updatedEndTime, note: note })
+  await db
+    .update(bookings)
+    .set({ startTime: updatedStartTime, endTime: updatedEndTime })
     .where(eq(bookings.id, id))
     .limit(1);
 }

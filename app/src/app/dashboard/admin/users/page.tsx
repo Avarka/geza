@@ -15,5 +15,5 @@ export default async function Page() {
     }
   }
   
-  redirect("/dashboard/operator/semester");
+  return <div>Felhasználók kezelésének oldala. Ban, act as user.</div>;
 }

@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   mysqlTable,
   int,
@@ -10,7 +9,6 @@ import {
   json,
   char,
   mysqlEnum,
-  primaryKey,
 } from "drizzle-orm/mysql-core";
 
 /* --- BETTER AUTH TABLES --- */
@@ -85,60 +83,20 @@ export const verification = mysqlTable("verification", {
 
 /* --- APPLICATION TABLES --- */
 
-export const gezaTeacherCourses = mysqlTable("GEZA_teacher_courses", {
-  id: int().autoincrement().notNull().primaryKey(),
-  userId: int("user_id"),
-  userEmail: varchar("user_email", { length: 100 }).notNull(),
-  userName: varchar("user_name", { length: 100 }).notNull(),
-  teacherId: int("teacher_id"),
-  teacherDepartmentUniqueId: int("teacher_department_unique_id"),
-  teacherActive: int("teacher_active"),
-  courseId: int("course_id"),
-  courseNeptunId: varchar("course_neptun_id", { length: 100 }).notNull(),
-  courseUniqueName: varchar("course_unique_name", { length: 100 }).notNull(),
-  courseFullName: varchar("course_full_name", { length: 100 }).notNull(),
-  courseType: varchar("course_type", { length: 5 }).notNull(),
-  courseScool: char("course_scool").notNull(),
-  courseHour: int("course_hour").notNull(),
-  coursePrefill: int("course_prefill"),
-  courseDepartmentUniqueId: int("course_department_unique_id"),
-  courseDivisionDephelper: int("course_division_dephelper"),
-  weekId: int("week_id"),
-  weekWeek: int("week_week"),
-  weekActive: int("week_active"),
-  weekDate: date("week_date", { mode: "date" }),
-  courseStarttimeStarthour: int("course_starttime_starthour").notNull(),
-  courseStarttimeDayId: int("course_starttime_day_id").notNull(),
-  classroomNeptunId: varchar("classroom_neptun_id", { length: 255 }),
-  classroomUniqueName: varchar("classroom_unique_name", { length: 255 })
-    .default("'IR-217'")
-    .notNull(),
-  classroomFullName: varchar("classroom_full_name", { length: 255 })
-    .default("'IR-217 PC terem'")
-    .notNull(),
-});
-
-export const semester = mysqlTable("semester", {
-  name: varchar({ length: 10 }).notNull().primaryKey(),
-  startDate: date("start_date", { mode: "date" }).notNull(),
-  endDate: date("end_date", { mode: "date" }).notNull(),
-});
-
 export const rules = mysqlTable("rule", {
   id: int().autoincrement().primaryKey(),
   name: varchar({ length: 100 }).notNull(),
   description: text("description").notNull(),
-  action: json("action").notNull(),
+  action: json("action").$type<{
+    type: "script" | "other",
+    scriptName: string
+  }>().notNull(),
   createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { fsp: 3 })
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
-
-export const ruleRelations = relations(rules, ({ many }) => ({
-  bookingRules: many(bookingsToRules),
-}));
 
 export const bookings = mysqlTable("booking", {
   id: int().autoincrement().primaryKey(),
@@ -147,6 +105,7 @@ export const bookings = mysqlTable("booking", {
     .references(() => user.id, {
       onDelete: "cascade",
     }),
+  ruleId: int().references(() => rules.id, { onDelete: "set null" }),
   classroom: varchar("classroom", { length: 255 }).notNull(),
   course: varchar("course", { length: 255 }).notNull(),
   startTime: timestamp("start_time", { fsp: 3 }).notNull(),
@@ -154,49 +113,18 @@ export const bookings = mysqlTable("booking", {
   status: mysqlEnum(["pending", "permitted", "declined"])
     .default("pending")
     .notNull(),
-  note: text("note"),
+  customRequest: json("custom_request").$type<{
+    operatingSystems?: string[] | undefined,
+    internetAccess?: boolean | undefined,
+    forcedReset?: {
+      beginning?: boolean | undefined,
+      end?: boolean | undefined
+    } | undefined,
+    note?: string | undefined,
+  }>(),
   createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { fsp: 3 })
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
-
-export const bookingRelations = relations(bookings, ({ one, many }) => ({
-  bookingToRules: many(bookingsToRules),
-  user: one(user, {
-    fields: [bookings.userId],
-    references: [user.id],
-  }),
-}));
-
-export const bookingsToRules = mysqlTable(
-  "booking_rule",
-  {
-    bookingId: int("booking_id")
-      .notNull()
-      .references(() => bookings.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
-    ruleId: int("rule_id")
-      .notNull()
-      .references(() => rules.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    createdAt: timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
-  },
-  t => [primaryKey({ columns: [t.bookingId, t.ruleId] })]
-);
-
-export const bookingsToRulesRelation = relations(
-  bookingsToRules,
-  ({ one }) => ({
-    booking: one(bookings, {
-      fields: [bookingsToRules.bookingId],
-      references: [bookings.id],
-    }),
-    rule: one(rules, {
-      fields: [bookingsToRules.ruleId],
-      references: [rules.id],
-    }),
-  })
-);

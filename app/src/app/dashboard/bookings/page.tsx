@@ -4,14 +4,17 @@ import { redirect } from "next/navigation";
 import { AdminBookingsPage, BookingsPage, BookingsPageOperator } from "./bookings-page";
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session;
 
-  if (!session) {
-    redirect("/login");
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } finally {
+    if (!session) {
+      redirect("/login");
+    }
   }
-
   if (session.user.role?.includes("admin")) {
     return <AdminBookingsPage userId={session.user.id} />;
   }

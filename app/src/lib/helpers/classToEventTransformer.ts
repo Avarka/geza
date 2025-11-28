@@ -1,5 +1,7 @@
 import { CalendarEvent } from "@ilamy/calendar";
-import { gezaTeacherCourses } from "../db/schema";
+import { Dayjs } from "dayjs";
+import day from "@/lib/dayjs-ext";
+import { gezaTeacherCourses } from "@/lib/db/schema-bir";
 
 type ClassData = typeof gezaTeacherCourses.$inferSelect;
 
@@ -16,21 +18,19 @@ export function classToEventTransformer(
     location: classItem.classroomFullName,
     data: {
       neptunCode: classItem.courseNeptunId,
-    }
+    },
   }));
 }
 
-export function getStartDate(classItem: ClassData): Date {
+export function getStartDate(classItem: ClassData): Dayjs {
   const startDate = new Date(classItem.weekDate!);
   const dayOffeset = classItem.courseStarttimeDayId! + 1; // assuming dayId 0 = Monday
   startDate.setDate(startDate.getDate() + dayOffeset);
   startDate.setHours(classItem.courseStarttimeStarthour!);
-  return startDate;
+  return day(startDate);
 }
 
-export function getEndDate(classItem: ClassData): Date {
+export function getEndDate(classItem: ClassData): Dayjs {
   const startDate = getStartDate(classItem);
-  return new Date(
-    startDate.setHours(startDate.getHours() + classItem.courseHour)
-  );
+  return startDate.add(classItem.courseHour, 'hours');
 }

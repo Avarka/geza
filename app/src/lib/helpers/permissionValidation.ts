@@ -2,15 +2,19 @@ import { headers } from "next/headers";
 import { auth } from "../auth";
 import { ac } from "../auth/permissions";
 
-export async function validateSession<
-  S extends keyof typeof ac.statements
->(statement: S, perms: string[]): Promise<boolean> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return false;
+export async function validateSession<S extends keyof typeof ac.statements>(
+  statement: S,
+  perms: string[]
+): Promise<boolean> {
+  let session = undefined;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } finally {
+    if (!session) {
+      return false;
+    }
   }
 
   const has = await auth.api.userHasPermission({

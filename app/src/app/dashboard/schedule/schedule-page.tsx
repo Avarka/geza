@@ -4,22 +4,30 @@ import BookingDialog from "@/components/calendar/booking-dialog";
 import { TeacherCalendarHeader } from "@/components/calendar/calendar-header";
 import CustomEvent from "@/components/calendar/event";
 import { rules } from "@/lib/db/schema";
+import { gezaTeacherCourses } from "@/lib/db/schema-bir";
+import { classToEventTransformer } from "@/lib/helpers/classToEventTransformer";
 import { CalendarEvent, IlamyCalendar } from "@ilamy/calendar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Rule = typeof rules.$inferSelect;
+type ClassData = typeof gezaTeacherCourses.$inferSelect;
 
 export function SchedulePage({
-  events,
+  classes,
   rules,
   userLdap,
 }: {
-  events: CalendarEvent[];
+  classes: ClassData[];
   rules: Rule[];
   userLdap: string;
 }) {
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [bookingEvent, setBookingEvent] = useState<CalendarEvent | undefined>(undefined);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+  useEffect(() => {
+    setEvents(classToEventTransformer(classes))
+  }, [classes])
 
   return (
     <div>
@@ -48,6 +56,12 @@ export function SchedulePage({
           setBookingEvent(event);
           setIsBookingDialogOpen(true);
         }}
+        businessHours={{
+          daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+          startTime: 8,
+          endTime: 22
+        }}
+        timeFormat="24-hour"
       />
     </div>
   );

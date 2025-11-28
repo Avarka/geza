@@ -18,6 +18,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { newBookingFormSchema } from "@/lib/schemas/bookingForm";
 import {
   Field,
+  FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -36,9 +38,18 @@ import { getUserScheduleForCourse } from "@/lib/actions/schedule";
 import { getStartDate } from "@/lib/helpers/classToEventTransformer";
 import { Spinner } from "@/components/ui/spinner";
 import { createBookingsForEvents } from "@/lib/actions/bookings";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Rule = typeof rules.$inferSelect;
 
@@ -52,10 +63,14 @@ export default function BookingDialog({
     resolver: zodResolver(newBookingFormSchema),
     defaultValues: {
       listOfEvents: [event.start.toISOString()],
-      listOfRules: [],
-      note: "",
-      startTime: new Date(event.start).toTimeString().split(" ")[0],
-      endTime: new Date(event.end).toTimeString().split(" ")[0],
+      rule: "",
+      customRequest: {
+        note: "",
+        internetAccess: true,
+        operatingSystems: [],
+      },
+      startTime: event.start.format("HH:mm"),
+      endTime: event.end.format("HH:mm"),
     },
   });
 
@@ -71,18 +86,20 @@ export default function BookingDialog({
         userLdap,
         event.data!.neptunCode
       );
-      const dates = events.map(e => getStartDate(e));
+      const dates = events.map(e => getStartDate(e).toDate());
       setDates(dates);
     });
   }, [event.data, userLdap]);
 
   const onSubmit = async (values: z.infer<typeof newBookingFormSchema>) => {
     try {
+      if (!event.location || !event.data?.neptunCode) {
+        throw new Error("Malformed event! Probably internal error.");
+      }
+
       await createBookingsForEvents({
         event: {
-          lenght: Math.abs(
-            new Date(event.start).getHours() - new Date(event.end).getHours()
-          ),
+          lenght: Math.abs(event.start.hour() - event.end.hour()),
           location: event.location,
           neptunCode: event.data?.neptunCode,
         },
@@ -118,167 +135,275 @@ export default function BookingDialog({
           <DialogTitle>{event.title}</DialogTitle>
           <DialogDescription>ZH mód foglalása</DialogDescription>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-4">
-          <FieldGroup>
-            <div className="flex gap-4 md:flex-row flex-col">
-              <Controller
-                control={form.control}
-                name="startTime"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="startTime">Kezdő időpont</FieldLabel>
-                    <Input
-                      {...field}
-                      type="time"
-                      id="startTime"
-                      step="60"
-                      min={new Date(event.start).toTimeString().split(" ")[0]}
-                      max={new Date(event.end).toTimeString().split(" ")[0]}
-                      value={field.value || ""}
-                    />
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="endTime"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="endTime">Vég időpont</FieldLabel>
-                    <Input
-                      {...field}
-                      type="time"
-                      id="endTime"
-                      step="60"
-                      min={new Date(event.start).toTimeString().split(" ")[0]}
-                      max={new Date(event.end).toTimeString().split(" ")[0]}
-                      value={field.value || ""}
-                    />
-                  </Field>
-                )}
-              />
-            </div>
-
-            <Controller
-              control={form.control}
-              name="listOfEvents"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="events">Alkalmak</FieldLabel>
-                  <MultiSelect
-                    {...field}
-                    onValuesChange={field.onChange}
-                    values={field.value}
-                  >
-                    <MultiSelectTrigger
-                      className="w-full max-w-[400px]"
-                      id="events"
-                    >
-                      <MultiSelectValue placeholder="Válasszon alkalmakat..." />
-                    </MultiSelectTrigger>
-                    <MultiSelectContent>
-                      <MultiSelectGroup>
-                        {dates.length > 0 ? (
-                          dates.map((date, i) => (
-                            <MultiSelectItem
-                              key={date.toISOString()}
-                              value={date.toISOString()}
-                            >
-                              {(i + 1).toString().padStart(2, "0")}. alkalom (
-                              {(date.getMonth() + 1)
-                                .toString()
-                                .padStart(2, "0")}
-                              /{date.getDate().toString().padStart(2, "0")})
-                            </MultiSelectItem>
-                          ))
-                        ) : (
-                          <MultiSelectItem value="">
-                            Nincsenek elérhető időpontok a foglaláshoz.
-                          </MultiSelectItem>
-                        )}
-                      </MultiSelectGroup>
-                    </MultiSelectContent>
-                  </MultiSelect>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
+        <ScrollArea className="max-h-[450px]">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 mb-4 pr-4"
+          >
+            <FieldGroup>
+              <div className="flex gap-4 md:flex-row flex-col">
+                <Controller
+                  control={form.control}
+                  name="startTime"
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="startTime">Kezdő időpont</FieldLabel>
+                      <Input
+                        {...field}
+                        type="time"
+                        id="startTime"
+                        step="60"
+                        min={event.start
+                          .subtract(10, "minutes")
+                          .format("HH:mm")}
+                        max={event.end.format("HH:mm")}
+                        value={field.value || ""}
+                      />
+                    </Field>
                   )}
-                </Field>
-              )}
-            />
+                />
 
-            <Controller
-              control={form.control}
-              name="listOfRules"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="rules">Szabályok</FieldLabel>
-                  <MultiSelect
-                    {...field}
-                    onValuesChange={field.onChange}
-                    values={field.value.map(String)}
-                  >
-                    <MultiSelectTrigger
-                      className="w-full max-w-[400px]"
-                      id="rules"
+                <Controller
+                  control={form.control}
+                  name="endTime"
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="endTime">Vég időpont</FieldLabel>
+                      <Input
+                        {...field}
+                        type="time"
+                        id="endTime"
+                        step="60"
+                        min={event.start.format("HH:mm")}
+                        max={event.end.add(10, "minutes").format("HH:mm")}
+                        value={field.value || ""}
+                      />
+                    </Field>
+                  )}
+                />
+              </div>
+
+              <Controller
+                control={form.control}
+                name="listOfEvents"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="events">Alkalmak</FieldLabel>
+                    <MultiSelect
+                      {...field}
+                      onValuesChange={field.onChange}
+                      values={field.value}
                     >
-                      <MultiSelectValue placeholder="Válasszon szabályokat..." />
-                    </MultiSelectTrigger>
-                    <MultiSelectContent>
-                      <MultiSelectGroup>
+                      <MultiSelectTrigger className="w-full" id="events">
+                        <MultiSelectValue placeholder="Válasszon alkalmakat..." />
+                      </MultiSelectTrigger>
+                      <MultiSelectContent>
+                        <MultiSelectGroup>
+                          {dates.length > 0 ? (
+                            dates.map((date, i) => (
+                              <MultiSelectItem
+                                key={date.toISOString()}
+                                value={date.toISOString()}
+                              >
+                                {(i + 1).toString().padStart(2, "0")}. alkalom (
+                                {(date.getMonth() + 1)
+                                  .toString()
+                                  .padStart(2, "0")}
+                                /{date.getDate().toString().padStart(2, "0")})
+                              </MultiSelectItem>
+                            ))
+                          ) : (
+                            <MultiSelectItem value="">
+                              Nincsenek elérhető időpontok a foglaláshoz.
+                            </MultiSelectItem>
+                          )}
+                        </MultiSelectGroup>
+                      </MultiSelectContent>
+                    </MultiSelect>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="rule"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="rules">Szabály</FieldLabel>
+                    <Select
+                      {...field}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Válasszon szabályt" />
+                      </SelectTrigger>
+                      <SelectContent>
                         {rules.length > 0 ? (
                           rules.map(rule => (
-                            <MultiSelectItem
+                            <SelectItem
                               key={rule.id.toString()}
                               value={rule.id.toString()}
                             >
                               {rule.name}
-                            </MultiSelectItem>
+                            </SelectItem>
                           ))
                         ) : (
-                          <MultiSelectItem value="">
-                            Nincsenek elérhető szabályok.
-                          </MultiSelectItem>
+                          <></>
                         )}
-                      </MultiSelectGroup>
-                    </MultiSelectContent>
-                  </MultiSelect>
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
+                        <SelectItem value="other">Egyéni</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
 
-            <Controller
-              control={form.control}
-              name="note"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="note">Megjegyzés</FieldLabel>
-                  <Textarea
-                    {...field}
-                    id="note"
-                    placeholder="Szabadszavas megjegyzés, amennyiben szükséges"
-                    rows={4}
+              {form.watch("rule") === "other" && (
+                <>
+                  <Controller
+                    control={form.control}
+                    name="customRequest.operatingSystems"
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="events">Menü opciók</FieldLabel>
+                        <MultiSelect
+                          {...field}
+                          onValuesChange={field.onChange}
+                          values={field.value}
+                        >
+                          <MultiSelectTrigger className="w-full" id="events">
+                            <MultiSelectValue placeholder="Válasszon lehetőségeket..." />
+                          </MultiSelectTrigger>
+                          <MultiSelectContent>
+                            <MultiSelectGroup>
+                              <MultiSelectItem value="linux">
+                                Linux
+                              </MultiSelectItem>
+                              <MultiSelectItem value="windows">
+                                Windows
+                              </MultiSelectItem>
+                              <MultiSelectItem value="cs">
+                                CooSpace
+                              </MultiSelectItem>
+                            </MultiSelectGroup>
+                          </MultiSelectContent>
+                        </MultiSelect>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
                   />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Mégse</Button>
-              </DialogClose>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? <Spinner /> : null} Foglalás
-              </Button>
-            </DialogFooter>
-          </FieldGroup>
-        </form>
+                  <Controller
+                    control={form.control}
+                    name="customRequest.internetAccess"
+                    render={({ field, fieldState }) => (
+                      <Field
+                        {...field}
+                        orientation="horizontal"
+                        data-invalid={fieldState.invalid}
+                      >
+                        <FieldContent>
+                          <FieldLabel htmlFor="internetAccess">
+                            Internet hozzáférés
+                          </FieldLabel>
+                          <FieldDescription>
+                            Az általános internethozzáférés ezzel tiltható.
+                            Amennyiben szükség van bizonyos oldalakra, vagy
+                            szoftverekre, azt a lenti megjegyzés mezőben
+                            jelezze.
+                          </FieldDescription>
+                        </FieldContent>
+                        <Switch id="internetAccess" />
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    control={form.control}
+                    name="customRequest.forcedReset.beginning"
+                    render={({ field, fieldState }) => (
+                      <Field
+                        {...field}
+                        orientation="horizontal"
+                        data-invalid={fieldState.invalid}
+                      >
+                        <FieldContent>
+                          <FieldLabel htmlFor="forcedResetBegin">
+                            Újraindítás az elején
+                          </FieldLabel>
+                          <FieldDescription>
+                            A virtuális operációs rendszer újbóli kiválasztása
+                            szükséges a kezdéskor. Ezzel eltűntetve az
+                            esetlegesen megnyitott alkalmazásokat, weboldalakat.
+                          </FieldDescription>
+                        </FieldContent>
+                        <Switch id="forcedResetBegin" />
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    control={form.control}
+                    name="customRequest.forcedReset.end"
+                    render={({ field, fieldState }) => (
+                      <Field
+                        {...field}
+                        orientation="horizontal"
+                        data-invalid={fieldState.invalid}
+                      >
+                        <FieldContent>
+                          <FieldLabel htmlFor="forcedResetEnd">
+                            Újraindítás a végén
+                          </FieldLabel>
+                          <FieldDescription>
+                            A vizsga végén a virtuális operációs rendszer leáll.
+                          </FieldDescription>
+                        </FieldContent>
+                        <Switch id="forcedResetEnd" />
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    control={form.control}
+                    name="customRequest.note"
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="note">Megjegyzés</FieldLabel>
+                        <Textarea
+                          {...field}
+                          id="note"
+                          placeholder="Szabadszavas megjegyzés, amennyiben szükséges"
+                          rows={4}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                </>
+              )}
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Mégse</Button>
+                </DialogClose>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? <Spinner /> : null} Foglalás
+                </Button>
+              </DialogFooter>
+            </FieldGroup>
+          </form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

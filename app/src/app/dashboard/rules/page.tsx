@@ -14,6 +14,6 @@ export default async function Page() {
       redirect("/login");
     }
   }
-  
-  redirect("/dashboard/operator/semester");
+
+  return <div>Leírás, szabály összekötés oldala</div>;
 }

@@ -6,12 +6,16 @@ import { toast } from "sonner";
 import { getRules } from "@/lib/actions/rules";
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session;
 
-  if (!session) {
-    redirect("/login");
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } finally {
+    if (!session) {
+      redirect("/login");
+    }
   }
 
   if (

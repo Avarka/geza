@@ -5,6 +5,7 @@ import { RuleItem } from "@/components/rules/rule-item";
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { rules } from "@/lib/db/schema";
 import { PlusCircleIcon } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -57,7 +58,7 @@ export function RulesPage({
         </div>
 
         {isUpdating ? (
-          null
+          <div className="flex flex-col items-center gap-2"><Spinner className="size-10" /> Betöltés...</div>
         ) : (
           <Accordion type="single" collapsible>
             {currentRules.map(rule => (

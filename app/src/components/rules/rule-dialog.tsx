@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { ruleCreate } from "@/lib/schemas/ruleCreate";
 import { createRule, updateRule } from "@/lib/actions/rules";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function RuleCreateEditDialog({
   rule,
@@ -44,12 +45,15 @@ export default function RuleCreateEditDialog({
       if (rule) {
         await updateRule(rule.name, values);
       } else {
-        values["action"] = "{}";
-        //@ts-expect-error Expecting error until JSON schema is clarified
-        await createRule(values);
+        const newRule = {
+          ...values,
+          action: { type: ("script" as const), scriptName: values.scriptName },
+        };
+        await createRule(newRule);
       }
       props.onOpenChange?.(false);
       toast.success(`Szabály sikeresen ${rule ? "frissítve" : "létrehozva"}`);
+      form.reset();
     } catch (error) {
       console.error("Error creating rule:", error);
       toast.error(
@@ -98,10 +102,9 @@ export default function RuleCreateEditDialog({
                   <FieldLabel htmlFor="ruleDescription">
                     Szabály leírása
                   </FieldLabel>
-                  <Input
+                  <Textarea
                     {...field}
                     id="ruleDescription"
-                    type="text"
                     required
                     aria-invalid={fieldState.invalid}
                   />
@@ -114,18 +117,14 @@ export default function RuleCreateEditDialog({
 
             <Controller
               control={form.control}
-              name="action"
-              disabled
+              name="scriptName"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="ruleAction">
-                    Művelet
-                  </FieldLabel>
+                  <FieldLabel htmlFor="scriptName">Script neve</FieldLabel>
                   <Input
                     {...field}
-                    value={JSON.stringify(field.value)}
-                    id="ruleAction"
-                    disabled
+                    value={field.value}
+                    id="scriptName"
                     type="text"
                     required
                     aria-invalid={fieldState.invalid}
