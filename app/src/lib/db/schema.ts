@@ -1,13 +1,12 @@
+import { relations } from "drizzle-orm";
 import {
   mysqlTable,
   int,
   varchar,
-  date,
   text,
   timestamp,
   boolean,
   json,
-  char,
   mysqlEnum,
 } from "drizzle-orm/mysql-core";
 
@@ -33,6 +32,9 @@ export const user = mysqlTable("user", {
   displayName: text("display_name"),
 });
 
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
+
 export const session = mysqlTable("session", {
   id: varchar("id", { length: 36 }).primaryKey(),
   expiresAt: timestamp("expires_at", { fsp: 3 }).notNull(),
@@ -48,6 +50,9 @@ export const session = mysqlTable("session", {
     .references(() => user.id, { onDelete: "cascade" }),
   impersonatedBy: text("impersonated_by"),
 });
+
+export type Session = typeof session.$inferSelect;
+export type NewSession = typeof session.$inferInsert;
 
 export const account = mysqlTable("account", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -69,6 +74,9 @@ export const account = mysqlTable("account", {
     .notNull(),
 });
 
+export type Account = typeof account.$inferSelect;
+export type NewAccount = typeof account.$inferInsert;
+
 export const verification = mysqlTable("verification", {
   id: varchar("id", { length: 36 }).primaryKey(),
   identifier: text("identifier").notNull(),
@@ -80,6 +88,9 @@ export const verification = mysqlTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export type Verification = typeof verification.$inferSelect;
+export type NewVerification = typeof verification.$inferInsert;
 
 /* --- APPLICATION TABLES --- */
 
@@ -98,7 +109,10 @@ export const rules = mysqlTable("rule", {
     .notNull(),
 });
 
-export const bookings = mysqlTable("booking", {
+export type Rule = typeof rules.$inferSelect;
+export type NewRule = typeof rules.$inferInsert;
+
+export const bookings = mysqlTable("bookings", {
   id: int().autoincrement().primaryKey(),
   userId: varchar("user_id", { length: 36 })
     .notNull()
@@ -128,3 +142,11 @@ export const bookings = mysqlTable("booking", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export type Booking = typeof bookings.$inferSelect;
+export type NewBooking = typeof bookings.$inferInsert;
+
+export const bookingRelations = relations(bookings, ({ one }) => ({
+  user: one(user, { fields: [bookings.userId], references: [user.id] }),
+  rule: one(rules, { fields: [bookings.ruleId], references: [rules.id] }),
+}));

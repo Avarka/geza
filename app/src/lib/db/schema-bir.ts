@@ -35,3 +35,5 @@ export const gezaTeacherCourses = mysqlView("GEZA_teacher_courses", {
   }).notNull(),
   classroomFullName: varchar("classroom_full_name", { length: 255 }).notNull(),
 }).existing();
+
+export type GezaTeacherCourse = typeof gezaTeacherCourses.$inferSelect;

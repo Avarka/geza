@@ -3,14 +3,11 @@
 import BookingDialog from "@/components/calendar/booking-dialog";
 import { TeacherCalendarHeader } from "@/components/calendar/calendar-header";
 import CustomEvent from "@/components/calendar/event";
-import { rules } from "@/lib/db/schema";
-import { gezaTeacherCourses } from "@/lib/db/schema-bir";
+import { Rule } from "@/lib/db/schema";
+import { GezaTeacherCourse as ClassData } from "@/lib/db/schema-bir";
 import { classToEventTransformer } from "@/lib/helpers/classToEventTransformer";
 import { CalendarEvent, IlamyCalendar } from "@ilamy/calendar";
 import { useEffect, useState } from "react";
-
-type Rule = typeof rules.$inferSelect;
-type ClassData = typeof gezaTeacherCourses.$inferSelect;
 
 export function SchedulePage({
   classes,

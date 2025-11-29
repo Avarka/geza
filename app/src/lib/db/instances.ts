@@ -11,7 +11,7 @@ const birConnection = await mysql.createConnection({
   uri: process.env.BIR_DATABASE_URL!,
 });
 
-const db = drizzle(mainConnection, { schema, mode: "default", logger: true });
-const birDb = drizzle(birConnection, { schema: birSchema, mode: "default", logger: true });
+const db = drizzle(mainConnection, { schema, mode: "planetscale", logger: true });
+const birDb = drizzle(birConnection, { schema: birSchema, mode: "planetscale", logger: true });
 
 export { db, birDb };

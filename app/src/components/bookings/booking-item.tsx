@@ -1,4 +1,3 @@
-import { bookings } from "@/lib/db/schema";
 import {
   Item,
   ItemActions,
@@ -32,9 +31,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 export function BookingItem({
   booking,
+  onRefresh,
   isOperatorView = false,
 }: {
-  booking: typeof bookings.$inferSelect;
+  booking: Booking;
+  onRefresh: () => void;
   isOperatorView?: boolean;
 }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -48,7 +49,9 @@ export function BookingItem({
         return (
           <Tooltip>
             <TooltipTrigger asChild>
-              <ClipboardClock />
+              <ItemMedia variant="icon">
+                <ClipboardClock />
+              </ItemMedia>
             </TooltipTrigger>
             <TooltipContent>A foglalás elbírálásra vár.</TooltipContent>
           </Tooltip>
@@ -57,7 +60,9 @@ export function BookingItem({
         return (
           <Tooltip>
             <TooltipTrigger asChild>
-              <ClipboardCheck />
+              <ItemMedia variant="icon">
+                <ClipboardCheck />
+              </ItemMedia>
             </TooltipTrigger>
             <TooltipContent>A foglalást elfogadták.</TooltipContent>
           </Tooltip>
@@ -66,7 +71,9 @@ export function BookingItem({
         return (
           <Tooltip>
             <TooltipTrigger asChild>
-              <ClipboardX />
+              <ItemMedia variant="icon">
+                <ClipboardX />
+              </ItemMedia>
             </TooltipTrigger>
             <TooltipContent>A foglalás elutasították.</TooltipContent>
           </Tooltip>
@@ -78,8 +85,9 @@ export function BookingItem({
     startTransition(async () => {
       setOperation("delete");
       await deleteBooking(booking.id);
-      toast.success("Foglalás törölve, frissítse az oldalt");
+      toast.success("Foglalás törölve!");
       setOperation(null);
+      onRefresh();
     });
   };
 
@@ -103,12 +111,19 @@ export function BookingItem({
     });
   };
 
+  const handleEditChange = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      onRefresh();
+    }
+  };
+
   return (
     <>
       <BookingEditDialog
         booking={booking}
         open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+        onOpenChange={handleEditChange}
       />
       <DeleteDialog
         open={deleteDialogOpen}
@@ -123,7 +138,7 @@ export function BookingItem({
           booking.status === "permitted" && "bg-green-100 dark:bg-green-900"
         )}
       >
-        <ItemMedia variant="icon">{statusIcon()}</ItemMedia>
+        {statusIcon()}
         <ItemContent>
           <ItemTitle>
             {booking.course} - {booking.startTime.toDateString()}

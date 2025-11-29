@@ -1,21 +1,18 @@
 "use client";
 
-import { rules } from "@/lib/db/schema";
+import { Rule } from "@/lib/db/schema";
 import { useState } from "react";
 import { Pen, Trash2 } from "lucide-react";
 import { deleteRule } from "@/lib/actions/rules";
 import RuleCreateEditDialog from "./rule-dialog";
-import { DeleteDialog } from "../delete-dialog";
+import { DeleteDialog } from "@/components/delete-dialog";
 import {
-  Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../ui/accordion";
-import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
-
-type Rule = typeof rules.$inferSelect;
+} from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 export function RuleItem({ rule, onEdit }: { rule: Rule; onEdit: () => void }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

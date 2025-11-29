@@ -3,17 +3,25 @@
 import { db } from "@/lib/db/instances";
 import { validateSession } from "@/lib/helpers/permissionValidation";
 import { newBookingFormSchema } from "@/lib/schemas/bookingForm";
-import { bookings, rules, user } from "@/lib/db/schema";
+import { bookings, NewBooking, rules, user } from "@/lib/db/schema";
 import { and, eq, gt, or } from "drizzle-orm";
 import * as z from "zod";
-import transporter from "@/lib/mailer";
-import { render } from "@react-email/components";
-import NewBookingEmail from "@/emails/new-booking";
-import TestEmail from "@/emails/test";
+import {
+  sendBookingStatusChangeEmailUser,
+  sendNewBookingEmailOperator,
+  sendNewBookingEmailUser,
+  sendNewBulkBookingEmailOperator,
+} from "@/lib/actions/email";
 
-export async function createBooking(data: typeof bookings.$inferInsert) {
-  await validateSession("booking", ["make"]);
+export async function createBooking(data: NewBooking) {
+  if (await validateSession("booking", ["make", "decide"])) {
+    data.status = "permitted";
+    await db.insert(bookings).values(data);
+    return;
+  }
 
+  // Probably never used.
+  await validateSession("booking", ["make"])
   await db.insert(bookings).values(data);
 }
 
@@ -58,6 +66,10 @@ export async function createBookingsForEvents({
     course: event.neptunCode,
   }));
 
+  if (bookingInserts.length === 0) {
+    return;
+  }
+
   await db.transaction(async tx => {
     await tx.insert(bookings).values(bookingInserts);
   });
@@ -70,29 +82,86 @@ export async function createBookingsForEvents({
     });
   }
 
-  const emailHtml = await render(
-    NewBookingEmail({ bookings: bookingInserts, user: userRecord, rule: rule })
+  const mailSends = [];
+
+  if (bookingInserts.length > 1) {
+    mailSends.push(
+      sendNewBulkBookingEmailOperator(
+        process.env.RECIEPENT_EMAILS!.split(","),
+        bookingInserts,
+        userRecord.name,
+        rule ? rule.name : undefined
+      )
+    );
+  } else {
+    mailSends.push(
+      sendNewBookingEmailOperator(
+        process.env.RECIEPENT_EMAILS!.split(","),
+        bookingInserts[0],
+        userRecord.name,
+        rule ? rule.name : undefined
+      )
+    );
+  }
+
+  mailSends.push(
+    sendNewBookingEmailUser(
+      [userRecord.email],
+      bookingInserts,
+      rule ? rule.name : undefined
+    )
   );
 
-  await transporter.sendMail(
-    {
-      from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM}>`,
-      to: "vadavar7@gmail.com",
-      subject: "Új foglalás",
-      html: emailHtml,
-    },
-    (error, info) => {
-      if (error) {
-        console.error(error);
-      }
+  await Promise.all(mailSends);
+}
 
-      console.log("Email sent: " + info.response);
-    }
-  );
+async function getBookingWithRuleAndUser(id: number) {
+  return (
+    await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, id))
+      .leftJoin(rules, eq(bookings.ruleId, rules.id))
+      .leftJoin(user, eq(bookings.userId, user.id))
+      .limit(1)
+  )[0];
+}
+
+async function getBookingWithUser(id: number) {
+  return (
+    await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, id))
+      .leftJoin(user, eq(bookings.userId, user.id))
+      .limit(1)
+  )[0];
+}
+
+async function getBookingWithRule(id: number) {
+  return (
+    await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, id))
+      .leftJoin(rules, eq(bookings.ruleId, rules.id))
+      .limit(1)
+  )[0];
+}
+
+async function getBooking(id: number) {
+  return (
+    await db.select().from(bookings).where(eq(bookings.id, id)).limit(1)
+  )[0];
 }
 
 export async function deleteBooking(id: number) {
   await validateSession("booking", ["make"]);
+
+  const booking = await getBooking(id);
+  if (booking?.status !== "pending") {
+    throw new Error("Only pending bookings can be deleted");
+  }
 
   await db.delete(bookings).where(eq(bookings.id, id)).limit(1);
 }
@@ -101,10 +170,7 @@ export async function getMyBookings(userId: string) {
   return await db.query.bookings.findMany({
     where: and(
       eq(bookings.userId, userId),
-      or(
-        eq(bookings.status, "pending"),
-        gt(bookings.startTime, new Date())
-      )
+      or(eq(bookings.status, "pending"), gt(bookings.startTime, new Date()))
     ),
     orderBy: (bookings, { asc }) => [asc(bookings.startTime)],
   });
@@ -133,6 +199,10 @@ export async function updateBooking(
     throw new Error("Booking not found");
   }
 
+  if (currentBooking.status !== "pending") {
+    throw new Error("Only pending bookings can be updated");
+  }
+
   const updatedStartTime = startTime
     ? parseTime(currentBooking.startTime, startTime)
     : currentBooking.startTime;
@@ -155,6 +225,16 @@ export async function permitBooking(id: number) {
     .set({ status: "permitted" })
     .where(eq(bookings.id, id))
     .limit(1);
+
+  const booking = await getBookingWithRuleAndUser(id);
+  if (booking && booking.user && booking.bookings) {
+    await sendBookingStatusChangeEmailUser(
+      [booking.user.email],
+      booking.bookings,
+      true,
+      false
+    );
+  }
 }
 
 export async function declineBooking(id: number) {
@@ -165,4 +245,23 @@ export async function declineBooking(id: number) {
     .set({ status: "declined" })
     .where(eq(bookings.id, id))
     .limit(1);
+
+  const booking = await getBookingWithRuleAndUser(id);
+  if (booking && booking.user && booking.bookings) {
+    await sendBookingStatusChangeEmailUser(
+      [booking.user.email],
+      booking.bookings,
+      false,
+      true
+    );
+  }
+}
+
+export async function getSetOfRooms() {
+  const result = await db
+    .selectDistinct({
+      classroom: bookings.classroom,
+    })
+    .from(bookings);
+  return result.map(r => r.classroom);
 }

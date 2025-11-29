@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBookingsPage, BookingsPage, BookingsPageOperator } from "./bookings-page";
+import { getRules } from "@/lib/actions/rules";
 
 export default async function Page() {
   let session;
@@ -16,11 +17,14 @@ export default async function Page() {
     }
   }
   if (session.user.role?.includes("admin")) {
-    return <AdminBookingsPage userId={session.user.id} />;
+    const rules = await getRules();
+    return <AdminBookingsPage userId={session.user.id} rules={rules} />;
   }
 
+  
   if (session.user.role?.includes("operator")) {
-    return <BookingsPageOperator userId={session.user.id} />;
+    const rules = await getRules();
+    return <BookingsPageOperator userId={session.user.id} rules={rules} />;
   }
 
   return <BookingsPage userId={session.user.id} />;

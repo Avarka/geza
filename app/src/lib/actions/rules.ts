@@ -1,11 +1,11 @@
 "use server";
 
-import { rules } from "@/lib/db/schema";
+import { NewRule, rules } from "@/lib/db/schema";
 import { db } from "@/lib/db/instances";
 import { eq } from "drizzle-orm";
 import { validateSession } from "../helpers/permissionValidation";
 
-export async function createRule(data: typeof rules.$inferInsert) {
+export async function createRule(data: NewRule) {
   await validateSession("rules", ["create"]);
 
   await db.insert(rules).values(data);
@@ -29,7 +29,7 @@ export async function getRules() {
 
 export async function updateRule(
   name: string,
-  data: Partial<typeof rules.$inferInsert>
+  data: Partial<NewRule>
 ) {
   await validateSession("rules", ["update"]);
 

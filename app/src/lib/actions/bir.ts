@@ -37,3 +37,12 @@ export async function getCourseByNeptun(courseNeptunId: string) {
     .where(eq(gezaTeacherCourses.courseNeptunId, courseNeptunId));
   return result;
 }
+
+export async function getSetOfRooms() {
+  const result = await db
+    .selectDistinct({
+      classroomFullName: gezaTeacherCourses.classroomFullName,
+    })
+    .from(gezaTeacherCourses);
+  return result.map(r => r.classroomFullName);
+}

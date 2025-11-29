@@ -1,9 +1,7 @@
 import { CalendarEvent } from "@ilamy/calendar";
 import { Dayjs } from "dayjs";
 import day from "@/lib/dayjs-ext";
-import { gezaTeacherCourses } from "@/lib/db/schema-bir";
-
-type ClassData = typeof gezaTeacherCourses.$inferSelect;
+import { GezaTeacherCourse as ClassData } from "@/lib/db/schema-bir";
 
 export function classToEventTransformer(
   classData: ClassData[]

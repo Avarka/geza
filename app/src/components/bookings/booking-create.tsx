@@ -1,3 +1,4 @@
+// This component is used to create arbitrary bookings! Intented for operator and admin use only!
 "use client";
 
 import {
@@ -11,11 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DialogProps } from "@radix-ui/react-dialog";
-import { CalendarEvent } from "@ilamy/calendar";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { newBookingFormSchema } from "@/lib/schemas/bookingForm";
+import {
+  createBookingFormSchema,
+} from "@/lib/schemas/bookingForm";
 import {
   Field,
   FieldContent,
@@ -33,11 +35,11 @@ import {
   MultiSelectValue,
 } from "@/components/ui/multi-select";
 import { Rule, rules } from "@/lib/db/schema";
-import { useEffect, useState, useTransition } from "react";
-import { getUserScheduleForCourse } from "@/lib/actions/bir";
-import { getStartDate } from "@/lib/helpers/classToEventTransformer";
 import { Spinner } from "@/components/ui/spinner";
-import { createBookingsForEvents } from "@/lib/actions/bookings";
+import {
+  createBooking,
+  getSetOfRooms as getSetOfRoomsFromBookings,
+} from "@/lib/actions/bookings";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -50,72 +52,69 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Link from "next/link";
-import { SquareArrowOutUpRight } from "lucide-react";
+import day from "@/lib/dayjs-ext";
+import { useEffect, useState, useTransition } from "react";
+import { getSetOfRooms as getSetOfRoomsFromBir } from "@/lib/actions/bir";
+import { CustomCombobox } from "@/components/custom-combobox";
 
-export default function BookingDialog({
-  event,
-  userLdap,
+export default function CreateBookingDialog({
+  userId,
   rules,
   ...props
-}: { event: CalendarEvent; userLdap: string; rules: Rule[] } & DialogProps) {
-  const form = useForm<z.infer<typeof newBookingFormSchema>>({
-    resolver: zodResolver(newBookingFormSchema),
+}: { userId: string; rules: Rule[] } & DialogProps) {
+  const form = useForm<z.infer<typeof createBookingFormSchema>>({
+    resolver: zodResolver(createBookingFormSchema),
     defaultValues: {
-      listOfEvents: [event.start.toISOString()],
       rule: "",
       customRequest: null,
-      startTime: event.start.format("HH:mm"),
-      endTime: event.end.format("HH:mm"),
+      startTime: day().toISOString(),
+      endTime: day().toISOString(),
+      location: "",
+      neptunCode: "",
     },
   });
 
-  const [gettingEvents, startTransition] = useTransition();
-  const [dates, setDates] = useState<Date[]>([]);
+  const [fetchingRooms, startFetchingRooms] = useTransition();
+  const [availableRooms, setAvailableRooms] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!event.data) {
-      return;
-    }
-    startTransition(async () => {
-      const events = await getUserScheduleForCourse(
-        userLdap,
-        event.data!.neptunCode
-      );
-      const dates = events.map(e => getStartDate(e).toDate());
-      setDates(dates);
+    startFetchingRooms(async () => {
+      const roomsFromBir = await getSetOfRoomsFromBir();
+      const roomsFromBookings = await getSetOfRoomsFromBookings();
+
+      const combinedRooms = Array.from(
+        new Set([...roomsFromBir, ...roomsFromBookings])
+      ).sort();
+      setAvailableRooms(combinedRooms);
     });
-  }, [event.data, userLdap]);
+  }, []);
 
-  const onSubmit = async (values: z.infer<typeof newBookingFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createBookingFormSchema>) => {
     try {
-      if (!event.location || !event.data?.neptunCode) {
-        throw new Error("Malformed event! Probably internal error.");
-      }
-
-      await createBookingsForEvents({
-        event: {
-          lenght: Math.abs(event.start.hour() - event.end.hour()),
-          location: event.location,
-          neptunCode: event.data?.neptunCode,
-        },
-        userLdap,
-        ...values,
+      await createBooking({
+        userId,
+        startTime: new Date(values.startTime),
+        endTime: new Date(values.endTime),
+        ruleId: values.rule === "other" ? null : parseInt(values.rule, 10),
+        customRequest: values.rule === "other" ? values.customRequest : null,
+        classroom: values.location,
+        course: values.neptunCode,
       });
       props.onOpenChange?.(false);
-      toast.success("Foglalás sikeres, operátori jóváhagyásra vár");
+      toast.success("Foglalás sikeresen létrehozva");
+      form.reset();
     } catch (error) {
       console.error("Error creating booking:", error);
       toast.error("Hiba történt a foglalás során");
     }
   };
 
-  if (gettingEvents) {
+  if (fetchingRooms) {
     return (
       <Dialog {...props}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{event.title}</DialogTitle>
+            <DialogTitle>Új foglalás létrehozása</DialogTitle>
             <DialogDescription>ZH mód foglalása</DialogDescription>
           </DialogHeader>
           <Spinner className="mx-auto my-8 size-10" />
@@ -128,13 +127,13 @@ export default function BookingDialog({
     <Dialog {...props}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{event.title}</DialogTitle>
+          <DialogTitle>Új foglalás létrehozása</DialogTitle>
           <DialogDescription>ZH mód foglalása</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[450px]">
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 mb-4 pr-4"
+            className="space-y-4 mb-4 pl-2 pr-4"
           >
             <FieldGroup>
               <div className="flex gap-4 md:flex-row flex-col">
@@ -146,13 +145,8 @@ export default function BookingDialog({
                       <FieldLabel htmlFor="startTime">Kezdő időpont</FieldLabel>
                       <Input
                         {...field}
-                        type="time"
+                        type="datetime-local"
                         id="startTime"
-                        step="60"
-                        min={event.start
-                          .subtract(10, "minutes")
-                          .format("HH:mm")}
-                        max={event.end.format("HH:mm")}
                         value={field.value || ""}
                       />
                     </Field>
@@ -167,11 +161,8 @@ export default function BookingDialog({
                       <FieldLabel htmlFor="endTime">Vég időpont</FieldLabel>
                       <Input
                         {...field}
-                        type="time"
+                        type="datetime-local"
                         id="endTime"
-                        step="60"
-                        min={event.start.format("HH:mm")}
-                        max={event.end.add(10, "minutes").format("HH:mm")}
                         value={field.value || ""}
                       />
                     </Field>
@@ -181,44 +172,40 @@ export default function BookingDialog({
 
               <Controller
                 control={form.control}
-                name="listOfEvents"
+                name="location"
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="events">Alkalmak</FieldLabel>
-                    <MultiSelect
+                    <FieldLabel htmlFor="classroom">Terem</FieldLabel>
+                    <CustomCombobox 
                       {...field}
-                      onValuesChange={field.onChange}
-                      values={field.value}
-                    >
-                      <MultiSelectTrigger className="w-full" id="events">
-                        <MultiSelectValue placeholder="Válasszon alkalmakat..." />
-                      </MultiSelectTrigger>
-                      <MultiSelectContent>
-                        <MultiSelectGroup>
-                          {dates.length > 0 ? (
-                            dates.map((date, i) => (
-                              <MultiSelectItem
-                                key={date.toISOString()}
-                                value={date.toISOString()}
-                              >
-                                {(i + 1).toString().padStart(2, "0")}. alkalom (
-                                {(date.getMonth() + 1)
-                                  .toString()
-                                  .padStart(2, "0")}
-                                /{date.getDate().toString().padStart(2, "0")})
-                              </MultiSelectItem>
-                            ))
-                          ) : (
-                            <MultiSelectItem value="">
-                              Nincsenek elérhető időpontok a foglaláshoz.
-                            </MultiSelectItem>
-                          )}
-                        </MultiSelectGroup>
-                      </MultiSelectContent>
-                    </MultiSelect>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                      options={availableRooms.map((room) => {
+                        return { label: room, value: room };
+                      })}
+                      placeholder="Válasszon termet vagy írjon be egy újat"
+                      selected={field.value}
+                      onChange={field.onChange}
+                      onCreate={(value) => {
+                        field.onChange(value);
+                        setAvailableRooms((prev) => [...prev, value]);
+                      }}
+
+                    />
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="neptunCode"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="neptunCode">Neptun kód</FieldLabel>
+                    <Input
+                      {...field}
+                      type="text"
+                      id="neptunCode"
+                      value={field.value || ""}
+                    />
                   </Field>
                 )}
               />
@@ -229,9 +216,6 @@ export default function BookingDialog({
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="rules">Szabály</FieldLabel>
-                    <FieldDescription>
-                      A szabályok részletes leírását megtalálja a <Link href="/dashboard/rules" target="_blank">szabályok <SquareArrowOutUpRight className="inline" size={14} /></Link> oldalon.
-                    </FieldDescription>
                     <Select
                       {...field}
                       onValueChange={field.onChange}

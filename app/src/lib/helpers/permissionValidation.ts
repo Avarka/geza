@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import { auth } from "../auth";
-import { ac } from "../auth/permissions";
+import { auth } from "@/lib/auth";
+import { ac } from "@/lib/auth/permissions";
 
 export async function validateSession<S extends keyof typeof ac.statements>(
   statement: S,

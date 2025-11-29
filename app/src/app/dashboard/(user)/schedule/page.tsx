@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { SchedulePage } from "./schedule-page";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getUserSchedule } from "@/lib/actions/schedule";
+import { getUserSchedule } from "@/lib/actions/bir";
 import { getRules } from "@/lib/actions/rules";
 
 export default async function Page() {

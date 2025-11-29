@@ -16,14 +16,14 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { editBookingFormSchema } from "@/lib/schemas/bookingForm";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { bookings } from "@/lib/db/schema";
+import { Booking } from "@/lib/db/schema";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { updateBooking } from "@/lib/actions/bookings";
 import { useEffect, useState, useTransition } from "react";
-import { gezaTeacherCourses } from "@/lib/db/schema-bir";
-import { getCourseByNeptun } from "@/lib/actions/schedule";
+import { GezaTeacherCourse } from "@/lib/db/schema-bir";
+import { getCourseByNeptun } from "@/lib/actions/bir";
 import {
   getEndDate,
   getStartDate,
@@ -32,7 +32,7 @@ import {
 export default function BookingEditDialog({
   booking,
   ...props
-}: { booking: typeof bookings.$inferSelect } & DialogProps) {
+}: { booking: Booking } & DialogProps) {
   const form = useForm<z.infer<typeof editBookingFormSchema>>({
     resolver: zodResolver(editBookingFormSchema),
     defaultValues: {
@@ -41,9 +41,7 @@ export default function BookingEditDialog({
     },
   });
 
-  const [course, setCourse] = useState<
-    typeof gezaTeacherCourses.$inferSelect | null
-  >(null);
+  const [course, setCourse] = useState<GezaTeacherCourse | null>(null);
   const [fetchingCourse, startTransition] = useTransition();
 
   useEffect(() => {
@@ -62,10 +60,7 @@ export default function BookingEditDialog({
     try {
       await updateBooking(booking.id, values.startTime, values.endTime);
       props.onOpenChange?.(false);
-      {
-        /* TODO: Auto refresh */
-      }
-      toast.success("Foglalás frissítve, frissítse az oldalt");
+      toast.success("Foglalás frissítve!");
     } catch (error) {
       console.error("Error creating booking:", error);
       toast.error("Hiba történt a foglalás során");
@@ -90,7 +85,9 @@ export default function BookingEditDialog({
     <Dialog {...props}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{course?.courseFullName} ({booking.course})</DialogTitle>
+          <DialogTitle>
+            {course?.courseFullName} ({booking.course})
+          </DialogTitle>
           <DialogDescription>ZH mód foglalás szerkeszése</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-4">
