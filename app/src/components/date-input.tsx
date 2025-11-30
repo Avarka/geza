@@ -35,7 +35,7 @@ export function DateInput({
             id="date"
             className="justify-between font-normal"
           >
-            {date ? date.toLocaleDateString() : "Válassz dátumot"}
+            {date ? date.toLocaleDateString("hu-HU") : "Válassz dátumot"}
             <ChevronDownIcon />
           </Button>
         </PopoverTrigger>

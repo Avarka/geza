@@ -18,10 +18,12 @@ export function NewBookingEmailOperator({
   bookings,
   userName,
   ruleName,
+  withFile
 }: {
   bookings: NewBooking[];
   userName: string;
   ruleName: string | undefined;
+  withFile: boolean;
 }) {
   const isCustom = ruleName === undefined;
   const oneBooking = bookings[0];
@@ -55,8 +57,8 @@ export function NewBookingEmailOperator({
                     })
                     .map(booking => (
                       <li key={booking.id}>
-                        {booking.startTime.toISOString()} -{" "}
-                        {booking.endTime.toISOString()}
+                        {booking.startTime.toLocaleString("hu-HU")} -{" "}
+                        {booking.endTime.toLocaleString("hu-HU")}
                       </li>
                     ))}
                 </ul>
@@ -72,6 +74,7 @@ export function NewBookingEmailOperator({
                 />
               )}
               <Text>Érintett terem: {oneBooking.classroom}</Text>
+              {withFile && <Text className="text-3xl text-red-500">Csatolt fájl is érkezett a foglaláshoz!</Text>}
             </Section>
           </Container>
         </Body>
@@ -124,8 +127,8 @@ export function NewBookingEmailUser({
                   })
                   .map(booking => (
                     <li key={booking.id}>
-                      {booking.startTime.toISOString()} -{" "}
-                      {booking.endTime.toISOString()}
+                      {booking.startTime.toLocaleString("hu-HU")} -{" "}
+                      {booking.endTime.toLocaleString("hu-HU")}
                     </li>
                   ))}
               </ul>

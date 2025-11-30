@@ -1,12 +1,12 @@
 "use client";
 
-import BookingDialog from "@/components/calendar/booking-dialog";
-import { TeacherCalendarHeader } from "@/components/calendar/calendar-header";
+import BookingDialog from "@/components/bookings/booking-dialog";
+import { ScheduleCalendarHeader } from "@/components/calendar/calendar-header";
 import CustomEvent from "@/components/calendar/event";
 import { Rule } from "@/lib/db/schema";
 import { GezaTeacherCourse as ClassData } from "@/lib/db/schema-bir";
 import { classToEventTransformer } from "@/lib/helpers/classToEventTransformer";
-import { CalendarEvent, IlamyCalendar } from "@ilamy/calendar";
+import { CalendarEvent, IlamyCalendar, useIlamyCalendarContext } from "@ilamy/calendar";
 import { useEffect, useState } from "react";
 
 export function SchedulePage({
@@ -19,12 +19,14 @@ export function SchedulePage({
   userLdap: string;
 }) {
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
-  const [bookingEvent, setBookingEvent] = useState<CalendarEvent | undefined>(undefined);
+  const [bookingEvent, setBookingEvent] = useState<CalendarEvent | undefined>(
+    undefined
+  );
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
-    setEvents(classToEventTransformer(classes))
-  }, [classes])
+    setEvents(classToEventTransformer(classes));
+  }, [classes]);
 
   return (
     <div>
@@ -43,7 +45,7 @@ export function SchedulePage({
         firstDayOfWeek="monday"
         disableCellClick={true}
         disableDragAndDrop={true}
-        headerComponent={<TeacherCalendarHeader />}
+        headerComponent={<ScheduleCalendarHeader />}
         timezone="Europe/Budapest"
         locale="hu"
         events={events}
@@ -54,9 +56,9 @@ export function SchedulePage({
           setIsBookingDialogOpen(true);
         }}
         businessHours={{
-          daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+          daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
           startTime: 8,
-          endTime: 22
+          endTime: 22,
         }}
         timeFormat="24-hour"
       />

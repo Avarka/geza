@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AdminBookingsPage, BookingsPage, BookingsPageOperator } from "./bookings-page";
+import { BookingsPage } from "./bookings-page";
 import { getRules } from "@/lib/actions/rules";
+import { AdminBookingsPage } from "@/app/dashboard/admin/(bookings)/bookings-page";
+import { BookingsPageOperator } from "@/app/dashboard/operator/(bookings)/bookings-page";
 
 export default async function Page() {
   let session;

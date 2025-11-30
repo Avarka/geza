@@ -21,6 +21,10 @@ export const newBookingFormSchema = z
     }).nullable(),
     startTime: z.string(),
     endTime: z.string(),
+    file: z.file()
+      .max(5e7, "A fájl mérete nem haladhatja meg a 50 MB-ot")
+      .mime(["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/zip", "application/x-rar-compressed"], "Csak PDF, DOC, DOCX, ZIP és RAR fájlok tölthetők fel")
+      .optional()
   })
   .superRefine((data, ctx) => {
     if (data.startTime && data.endTime) {

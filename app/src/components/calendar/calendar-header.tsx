@@ -7,11 +7,19 @@ import {
 import { Calendar as CalendarIcon, Menu } from "lucide-react";
 import React, { useState } from "react";
 import { ViewControls } from "./view-controls";
-import { useIlamyCalendarContext } from "@ilamy/calendar";
+import { useIlamyCalendarContext, UseIlamyCalendarContextReturn, useIlamyResourceCalendarContext, UseIlamyResourceCalendarContextReturn } from "@ilamy/calendar";
 
-export function TeacherCalendarHeader() {
-  const { view, setView, today, nextPeriod, prevPeriod } =
-    useIlamyCalendarContext();
+export function ScheduleCalendarHeader() {
+  return <CalendarHearedGeneric {...useIlamyCalendarContext()} />
+}
+
+export function ResouceCalendarHeader() {
+  return <CalendarHearedGeneric {...useIlamyResourceCalendarContext()} />
+}
+
+function CalendarHearedGeneric({
+  view, setView, today, nextPeriod, prevPeriod, currentDate
+}: UseIlamyCalendarContextReturn | UseIlamyResourceCalendarContextReturn) {
   const [mobilePopoverOpen, setMobilePopoverOpen] = useState(false);
 
   return (
@@ -21,8 +29,10 @@ export function TeacherCalendarHeader() {
         <div className="flex justify-center @2xl/base-header:justify-between flex-wrap items-center gap-2 border-b py-2 px-8">
           {/* Title area - Left section */}
           <div className="flex flex-wrap items-center justify-center gap-1 @2xl/base-header:justify-start">
-            <CalendarIcon className="h-5 w-5" />
-            {/* <TitleContent /> */}
+            <CalendarIcon className="h-5 w-5 mr-4" />
+            <h2 className="text-lg font-semibold">
+              {currentDate.format("YYYY MMMM")}
+            </h2>
           </div>
 
           <div className="flex flex-wrap justify-start @xl/base-header:justify-center gap-1 @4xl/base-header:justify-end overflow-x-auto">

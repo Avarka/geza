@@ -21,7 +21,7 @@ export async function createBooking(data: NewBooking) {
   }
 
   // Probably never used.
-  await validateSession("booking", ["make"])
+  await validateSession("booking", ["make"]);
   await db.insert(bookings).values(data);
 }
 
@@ -90,7 +90,12 @@ export async function createBookingsForEvents({
         process.env.RECIEPENT_EMAILS!.split(","),
         bookingInserts,
         userRecord.name,
-        rule ? rule.name : undefined
+        rule ? rule.name : undefined,
+        formValues.file ? {
+          filename: formValues.file.name,
+          content: Buffer.from(await formValues.file.arrayBuffer()),
+          contentType: formValues.file.type,
+        } : undefined
       )
     );
   } else {
@@ -99,7 +104,12 @@ export async function createBookingsForEvents({
         process.env.RECIEPENT_EMAILS!.split(","),
         bookingInserts[0],
         userRecord.name,
-        rule ? rule.name : undefined
+        rule ? rule.name : undefined,
+        formValues.file ? {
+          filename: formValues.file.name,
+          content: Buffer.from(await formValues.file.arrayBuffer()),
+          contentType: formValues.file.type,
+        } : undefined
       )
     );
   }
@@ -115,8 +125,10 @@ export async function createBookingsForEvents({
   await Promise.all(mailSends);
 }
 
-async function getBookingWithRuleAndUser(id: number) {
-  return (
+export async function getBookingWithRuleAndUser(id: number, authed: boolean = false) {
+  if (!authed) await validateSession("booking", ["view"]);
+
+  const res = (
     await db
       .select()
       .from(bookings)
@@ -125,6 +137,12 @@ async function getBookingWithRuleAndUser(id: number) {
       .leftJoin(user, eq(bookings.userId, user.id))
       .limit(1)
   )[0];
+
+  return {
+    booking: res.bookings,
+    rule: res.rule,
+    user: res.user
+  };
 }
 
 async function getBookingWithUser(id: number) {
@@ -138,8 +156,10 @@ async function getBookingWithUser(id: number) {
   )[0];
 }
 
-async function getBookingWithRule(id: number) {
-  return (
+export async function getBookingWithRule(id: number, authed: boolean = false) {
+  if (!authed) await validateSession("booking", ["view"]);
+
+  const res = (
     await db
       .select()
       .from(bookings)
@@ -147,9 +167,16 @@ async function getBookingWithRule(id: number) {
       .leftJoin(rules, eq(bookings.ruleId, rules.id))
       .limit(1)
   )[0];
+
+  return {
+    booking: res.bookings,
+    rule: res.rule,
+  };
 }
 
-async function getBooking(id: number) {
+export async function getBooking(id: number, authed: boolean = false) {
+  if (!authed) await validateSession("booking", ["view"]);
+
   return (
     await db.select().from(bookings).where(eq(bookings.id, id)).limit(1)
   )[0];
@@ -158,7 +185,7 @@ async function getBooking(id: number) {
 export async function deleteBooking(id: number) {
   await validateSession("booking", ["make"]);
 
-  const booking = await getBooking(id);
+  const booking = await getBooking(id, true);
   if (booking?.status !== "pending") {
     throw new Error("Only pending bookings can be deleted");
   }
@@ -226,11 +253,11 @@ export async function permitBooking(id: number) {
     .where(eq(bookings.id, id))
     .limit(1);
 
-  const booking = await getBookingWithRuleAndUser(id);
-  if (booking && booking.user && booking.bookings) {
+  const booking = await getBookingWithRuleAndUser(id, true);
+  if (booking && booking.user && booking.booking) {
     await sendBookingStatusChangeEmailUser(
       [booking.user.email],
-      booking.bookings,
+      booking.booking,
       true,
       false
     );
@@ -246,11 +273,11 @@ export async function declineBooking(id: number) {
     .where(eq(bookings.id, id))
     .limit(1);
 
-  const booking = await getBookingWithRuleAndUser(id);
-  if (booking && booking.user && booking.bookings) {
+  const booking = await getBookingWithRuleAndUser(id, true);
+  if (booking && booking.user && booking.booking) {
     await sendBookingStatusChangeEmailUser(
       [booking.user.email],
-      booking.bookings,
+      booking.booking,
       false,
       true
     );

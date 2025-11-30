@@ -41,24 +41,26 @@ export async function sendNewBulkBookingEmailOperator(
   to: string[],
   bookingInserts: NewBooking[],
   userName: string,
-  ruleName: string | undefined
+  ruleName: string | undefined,
+  file?: Attachment
 ) {
   const emailHtml = await render(
-    NewBookingEmailOperator({ bookings: bookingInserts, userName, ruleName })
+    NewBookingEmailOperator({ bookings: bookingInserts, userName, ruleName, withFile: file !== undefined })
   );
-  await sendMail(to, "Több új foglalást rögzítettek a rendszerben", emailHtml);
+  await sendMail(to, "Több új foglalást rögzítettek a rendszerben", emailHtml, file ? [file] : undefined);
 }
 
 export async function sendNewBookingEmailOperator(
   to: string[],
   bookingInsert: NewBooking,
   userName: string,
-  ruleName: string | undefined
+  ruleName: string | undefined,
+  file?: Attachment
 ) {
   const emailHtml = await render(
-    NewBookingEmailOperator({ bookings: [bookingInsert], userName, ruleName })
+    NewBookingEmailOperator({ bookings: [bookingInsert], userName, ruleName, withFile: file !== undefined })
   );
-  await sendMail(to, "Új foglalást rögzítettek a rendszerben", emailHtml);
+  await sendMail(to, "Új foglalást rögzítettek a rendszerben", emailHtml, file ? [file] : undefined);
 }
 
 export async function sendNewBookingEmailUser(

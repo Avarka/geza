@@ -4,6 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 @source "../../node_modules/@ilamy/calendar/dist";
 
+/* == iLamy customizations == */
+div[data-slot="scroll-area-scrollbar"] {
+  @apply z-50
+}
+
+div[data-testid="week-all-day-row"]{
+  @apply hidden
+}
+
+div[data-testid="week-time-grid"],
+div[data-testid="week-time-labels"] {
+  @apply *:box-border
+}
+
+div[data-testid="week-scroll-area"] div[data-slot="scroll-area-viewport"] {
+  overflow: hidden !important;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -3,7 +3,6 @@ import { createAccessControl } from "better-auth/plugins/access";
 
 const statement = {
   ...defaultStatements,
-  semester: ["read", "create", "update", "delete"],
   booking: ["make", "decide", "view"],
   schedule: ["viewSubject"],
   rules: ["read", "create", "update", "delete"],
@@ -12,7 +11,6 @@ const statement = {
 export const ac = createAccessControl(statement);
 
 export const admin = ac.newRole({
-  semester: ["read", "create", "update", "delete"],
   booking: ["make", "decide", "view"],
   schedule: ["viewSubject"],
   rules: ["read", "create", "update", "delete"],
@@ -20,7 +18,6 @@ export const admin = ac.newRole({
 });
 
 export const operator = ac.newRole({
-  semester: ["read", "create", "update", "delete"],
   booking: ["make", "decide", "view"],
   user: ["ban", "get", "impersonate", "list"],
   session: ["delete", "list", "revoke"],
@@ -28,7 +25,6 @@ export const operator = ac.newRole({
 });
 
 export const teacher = ac.newRole({
-  semester: ["read"],
   booking: ["make", "view"],
   rules: ["read"],
 });

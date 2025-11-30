@@ -45,6 +45,10 @@ const data: {
           title: "Kért ZH módok",
           url: "/dashboard/bookings",
         },
+        {
+          title: "Kabineti áttekintés",
+          url: "/dashboard/overview",
+        },
       ],
     },
   ],
@@ -59,6 +63,10 @@ const data: {
         {
           title: "Szabályok kezelése",
           url: "/dashboard/operator/rules",
+        },
+        {
+          title: "Kabineti áttekintés",
+          url: "/dashboard/overview",
         },
       ],
     },

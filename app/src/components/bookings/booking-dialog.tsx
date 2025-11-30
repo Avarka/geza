@@ -32,7 +32,7 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from "@/components/ui/multi-select";
-import { Rule, rules } from "@/lib/db/schema";
+import { Rule } from "@/lib/db/schema";
 import { useEffect, useState, useTransition } from "react";
 import { getUserScheduleForCourse } from "@/lib/actions/bir";
 import { getStartDate } from "@/lib/helpers/classToEventTransformer";
@@ -230,7 +230,12 @@ export default function BookingDialog({
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="rules">Szabály</FieldLabel>
                     <FieldDescription>
-                      A szabályok részletes leírását megtalálja a <Link href="/dashboard/rules" target="_blank">szabályok <SquareArrowOutUpRight className="inline" size={14} /></Link> oldalon.
+                      A szabályok részletes leírását megtalálja a{" "}
+                      <Link href="/dashboard/rules" target="_blank">
+                        szabályok{" "}
+                        <SquareArrowOutUpRight className="inline" size={14} />
+                      </Link>{" "}
+                      oldalon.
                     </FieldDescription>
                     <Select
                       {...field}
@@ -259,6 +264,28 @@ export default function BookingDialog({
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
                     )}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="file"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="file">Kiadandó fájl</FieldLabel>
+                    <Input
+                      type="file"
+                      id="file"
+                      accept=".pdf,.doc,.docx,.zip,.rar"
+                      ref={field.ref}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        field.onChange(file);
+                      }}
+                    />
                   </Field>
                 )}
               />

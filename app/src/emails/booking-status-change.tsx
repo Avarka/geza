@@ -36,16 +36,16 @@ export function BookingStatusChangeEmailUser({
           {isPermitted && (
             <Text>
               A foglalása engedélyezve lett a következő időpontban:{" "}
-              {booking.startTime.toISOString()} -{" "}
-              {booking.endTime.toISOString()}
+              {booking.startTime.toLocaleString("hu-HU")} -{" "}
+              {booking.endTime.toLocaleString("hu-HU")}
             </Text>
           )}
           {isDeclined && (
             <>
               <Text>
                 A foglalása el lett utasítva a következő időpontra:{" "}
-                {booking.startTime.toISOString()} -{" "}
-                {booking.endTime.toISOString()}
+                {booking.startTime.toLocaleString("hu-HU")} -{" "}
+                {booking.endTime.toLocaleString("hu-HU")}
               </Text>
               <Text>
                 Kérjük vegye fel a kapcsolatot az üzemeltetővel további

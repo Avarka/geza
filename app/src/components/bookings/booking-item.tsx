@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import clsx from "clsx";
 import { Spinner } from "@/components/ui/spinner";
+import { Booking } from "@/lib/db/schema";
 
 export function BookingItem({
   booking,
@@ -141,10 +142,10 @@ export function BookingItem({
         {statusIcon()}
         <ItemContent>
           <ItemTitle>
-            {booking.course} - {booking.startTime.toDateString()}
+            {booking.course} - {booking.startTime.toLocaleDateString("hu-HU")}
           </ItemTitle>
           <ItemDescription>
-            {booking.startTime.toISOString()} - {booking.endTime.toISOString()}
+            {booking.startTime.toLocaleString("hu-HU")} - {booking.endTime.toLocaleString("hu-HU")}
           </ItemDescription>
         </ItemContent>
         <ItemActions>
