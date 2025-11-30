@@ -68,7 +68,7 @@ export function RuleItem({ rule, onEdit }: { rule: Rule; onEdit: () => void }) {
 
           <Separator className="my-4" />
           <pre>
-            {JSON.stringify(JSON.parse(rule.action as string), null, 2)}
+            {JSON.stringify(rule.action, null, 2)}
           </pre>
         </AccordionContent>
       </AccordionItem>
