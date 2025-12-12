@@ -2,11 +2,11 @@
 
 import BookingDialog from "@/components/bookings/booking-dialog";
 import { ScheduleCalendarHeader } from "@/components/calendar/calendar-header";
-import CustomEvent from "@/components/calendar/event";
+import CustomEvent, { isUnbookable } from "@/components/calendar/event";
 import { Rule } from "@/lib/db/schema";
 import { GezaTeacherCourse as ClassData } from "@/lib/db/schema-bir";
 import { classToEventTransformer } from "@/lib/helpers/classToEventTransformer";
-import { CalendarEvent, IlamyCalendar, useIlamyCalendarContext } from "@ilamy/calendar";
+import { CalendarEvent, IlamyCalendar } from "@ilamy/calendar";
 import { useEffect, useState } from "react";
 
 export function SchedulePage({
@@ -52,6 +52,7 @@ export function SchedulePage({
         viewHeaderClassName="bg-accent pointer-events-none"
         renderEvent={event => <CustomEvent event={event} />}
         onEventClick={async event => {
+          if (isUnbookable(event)) return;
           setBookingEvent(event);
           setIsBookingDialogOpen(true);
         }}

@@ -22,12 +22,16 @@ export default async function Dashboard({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session;
 
-  if (!session) {
-    redirect("/login");
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } finally {
+    if (!session) {
+      redirect("/login");
+    }
   }
 
   return (

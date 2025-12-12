@@ -52,6 +52,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { SquareArrowOutUpRight } from "lucide-react";
+import day from "@/lib/dayjs-ext";
 
 export default function BookingDialog({
   event,
@@ -82,7 +83,9 @@ export default function BookingDialog({
         userLdap,
         event.data!.neptunCode
       );
-      const dates = events.map(e => getStartDate(e).toDate());
+      const dates = events
+        .map(e => getStartDate(e).toDate())
+        //.filter(date => date >= new Date(new Date().setHours(0, 0, 0, 0)));
       setDates(dates);
     });
   }, [event.data, userLdap]);
@@ -196,16 +199,12 @@ export default function BookingDialog({
                       <MultiSelectContent>
                         <MultiSelectGroup>
                           {dates.length > 0 ? (
-                            dates.map((date, i) => (
+                            dates.map(date => (
                               <MultiSelectItem
                                 key={date.toISOString()}
                                 value={date.toISOString()}
                               >
-                                {(i + 1).toString().padStart(2, "0")}. alkalom (
-                                {(date.getMonth() + 1)
-                                  .toString()
-                                  .padStart(2, "0")}
-                                /{date.getDate().toString().padStart(2, "0")})
+                                {day(date).format("MMMM D.")} alkalom
                               </MultiSelectItem>
                             ))
                           ) : (
@@ -281,7 +280,7 @@ export default function BookingDialog({
                       ref={field.ref}
                       name={field.name}
                       onBlur={field.onBlur}
-                      onChange={(e) => {
+                      onChange={e => {
                         const file = e.target.files?.[0] || null;
                         field.onChange(file);
                       }}

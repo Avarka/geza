@@ -2,7 +2,7 @@
 
 import { birDb as db } from "@/lib/db/instances";
 import { gezaTeacherCourses } from "@/lib/db/schema-bir";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 
 export async function getUserSchedule(userLdapId: string) {
   const result = await db
